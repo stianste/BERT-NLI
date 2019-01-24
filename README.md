@@ -1,2 +1,2 @@
 # BERT-NLI
-A PyTorch implementation using the BERT network from google to solve the tas of NLI. 
+A PyTorch implementation using the BERT network from Google to solve the task of NLI.
