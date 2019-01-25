@@ -34,3 +34,17 @@ ssh luke01.idi.ntnu.no
 ```
 
 And enter your NTNU password when prompted.
+
+## Running the TOEFL11 example
+In order to run the TOEFL11 example on the remote host, you need to transfer the exisiting
+directory over ssh. Assuming that the data is avaliable in the `data` folder:
+
+```shell
+scp -r data/NLI-shared-task-2017 stianste@luke01.idi.ntnu.no:/work/lhome/stianste/projects/BERT-NLI/data
+```
+
+After than, one can just give permission to the `run_NLI.sh` script and run it:
+```shell
+chmod +x run_NLI.sh
+./run_NLI.sh
+```
