@@ -1,3 +1,4 @@
 torch
 torchvision
 pytorch-pretrained-bert
+pylint

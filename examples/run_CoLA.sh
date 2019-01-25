@@ -12,4 +12,3 @@ python run_classifier.py \
   --learning_rate 2e-5 \
   --num_train_epochs 3.0 \
   --output_dir /tmp/cola_output/
-

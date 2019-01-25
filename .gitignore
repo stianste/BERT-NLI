@@ -106,3 +106,7 @@ venv.bak/
 # Data sets
 /data/GLUE
 /data/MRPC
+/data/NLI-shared-task-2017/
+
+# vscode
+.vscode/
