@@ -22,3 +22,15 @@ Next you can run the CoLA example by going into the `examples` folder and runnin
 chmod +x run_CoLA.sh
 ./run_CoLA.sh
 ```
+
+### Memory issues
+On most machines, this will not run out of the box due to memory issues.
+For this reason, I have been granted access to the NTNU-Luke01 Nvidia Tesla
+P100 GPU. In order to access the machine, run
+
+```shell
+ssh username@login.stud.ntnu.no
+ssh luke01.idi.ntnu.no
+```
+
+And enter your NTNU password when prompted.
