@@ -3,15 +3,22 @@ A PyTorch implementation using the BERT network from Google to solve the task of
 
 ## How to get started
 Install virtualenv and create a virtual environment by running
-`pip3 install virtualenv`
-`mkdir venv`
-`virtualenv --python=/usr/bin/python3.6 venv/`
+```shell
+pip3 install virtualenv
+mkdir venv
+virtualenv --python=/usr/bin/python3.6 venv/
+```
 
 Donwload the example data by running
-`cd data/`
-chmod +x download_example_data.sh`
-`./download_example_data.sh`
+```shell
+cd data/
+chmod +x download_example_data.sh
+./download_example_data.sh
+```
 
 Next you can run the CoLA example by going into the `examples` folder and running
-`chmod +x run_CoLA.sh`
-`./run_CoLA.sh`
+```shell
+../examples/
+chmod +x run_CoLA.sh
+./run_CoLA.sh
+```
