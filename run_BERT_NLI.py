@@ -84,7 +84,7 @@ class TOEFL11Processor(DataProcessor):
     """Processor for the TOEFL11 data set."""
 
     def __init__(self):
-        self.labels = {}
+        self.id2label = {}
 
     def get_train_examples(self, data_dir: str) -> List[InputExample]:
         full_path = data_dir + constants.TOEFL11_TRAINING_DATA_PATH
@@ -115,7 +115,7 @@ class TOEFL11Processor(DataProcessor):
         assert len(labels) == 11, f'TOEFL11 Should have 11 labels. Actual: {len(labels)}'
         return labels
 
-    def _get_examples(self, full_path: str, set_type: str) -> List[InputExample]:
+    def _get_examples(self, full_path: str) -> List[InputExample]:
         examples = []
 
         filenames = [filename for filename in os.listdir(full_path)]
@@ -125,14 +125,14 @@ class TOEFL11Processor(DataProcessor):
                 example_id = filename.split(".")[0]
                 examples.append((example_id, text))
 
-        return self._create_examples(examples, set_type)
+        return self._create_examples(examples)
 
-    def _create_examples(self, lines: List[tuple], set_type: str) -> List[InputExample]:
+    def _create_examples(self, lines: List[tuple]) -> List[InputExample]:
         """Creates examples for the training and dev sets."""
         examples = []
         for example_id, text in lines:
             examples.append(
-                InputExample(guid=example_id, text_a=text, label=self.labels[example_id]))
+                InputExample(guid=example_id, text_a=text, label=self.id2label[example_id]))
         return examples
 
     def _create_labels(self, data_dir):
@@ -145,69 +145,85 @@ class TOEFL11Processor(DataProcessor):
         with open(filepath, "r") as f:
             for line in f.readlines():
                 example_id, _, _, label = line.split(',')
-                self.labels[example_id.strip()] = label.strip()
+                self.id2label[example_id.strip()] = label.strip()
 
 
-class MnliProcessor(DataProcessor):
-    """Processor for the MultiNLI data set (GLUE version)."""
+class RedditL2DataProcessor(object):
+    """Processor for the RedditL2 data set"""
 
-    def get_train_examples(self, data_dir):
-        """See base class."""
-        return self._create_examples(
-            self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+    def __init__(self):
+        self.id2label = {}
+        self.use_non_europe = constants.USE_NON_EUROPE_EXAMPLES
 
-    def get_dev_examples(self, data_dir):
-        """See base class."""
-        return self._create_examples(
-            self._read_tsv(os.path.join(data_dir, "dev_matched.tsv")),
-            "dev_matched")
+    def read_all_examples(self, data_dir) -> List[InputExample]:
+        europe_examples = self._get_InputExamples_from_dir(data_dir + 'europe_data')
 
-    def get_labels(self):
-        """See base class."""
-        return ["contradiction", "entailment", "neutral"]
+        non_europe_examples = []
+        if constants.USE_NON_EUROPE_EXAMPLES:
+            non_europe_examples = self._get_InputExamples_from_dir(data_dir + 'non_europe_data')
 
-    def _create_examples(self, lines, set_type):
-        """Creates examples for the training and dev sets."""
+        return europe_examples + non_europe_examples
+
+
+    def _get_InputExamples_from_dir(self, data_dir: str) -> List[InputExample]:
         examples = []
-        for (i, line) in enumerate(lines):
-            if i == 0:
-                continue
-            guid = "%s-%s" % (set_type, line[0])
-            text_a = line[8]
-            text_b = line[9]
-            label = line[-1]
-            examples.append(
-                InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+        for language_folder in os.listdir(data_dir):
+            label = language_folder.split('.')[1]
+            for username in os.listdir(f'{data_dir}/{language_folder}'):
+                for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
+                    with open(os.path.join(data_dir, language_folder, username, chunk), 'r') as f:
+                        text = ''.join(f.readlines())
+                        examples.append(
+                            InputExample(guid=f'{username}_{chunk}', text_a=text, label=label)
+                        )
+
         return examples
 
-
-class ColaProcessor(DataProcessor):
-    """Processor for the CoLA data set (GLUE version)."""
-
-    def get_train_examples(self, data_dir):
-        """See base class."""
-        return self._create_examples(
-            self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+    def get_train_examples(self, data_dir: str) -> List[InputExample]:
+        self.examples = self.read_all_examples(data_dir)
+        self.split_index = int(len(self.examples) * (constants.REDDIT_L2_TEST_SPLIT))
+        return self.examples[self.split_index:]
 
     def get_dev_examples(self, data_dir):
-        """See base class."""
-        return self._create_examples(
-            self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
+        return self.examples[:self.split_index]
 
     def get_labels(self):
-        """See base class."""
-        return ["0", "1"]
+        labels = list(set([
+            "Australia",
+            "Austria",
+            "Bulgaria",
+            "Croatia",
+            "Czech",
+            "Estonia",
+            "Finland",
+            "France",
+            "Germany",
+            "Greece",
+            "Hungary",
+            "Ireland",
+            "Italy",
+            "Lithuania",
+            "Mexico",
+            "Netherlands",
+            "NewZealand",
+            "Norway",
+            "Poland",
+            "Portugal",
+            "Romania",
+            "Russia",
+            "Serbia",
+            "Slovenia",
+            "Spain",
+            "Sweden",
+            "Turkey",
+            "UK",
+            "US",
+        ]))
 
-    def _create_examples(self, lines, set_type):
-        """Creates examples for the training and dev sets."""
-        examples = []
-        for (i, line) in enumerate(lines):
-            guid = "%s-%s" % (set_type, i)
-            text_a = line[3]
-            label = line[1]
-            examples.append(
-                InputExample(guid=guid, text_a=text_a, text_b=None, label=label))
-        return examples
+        if self.use_non_europe:
+            labels.append('Ukraine')
+
+        return labels
 
 
 def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer):
@@ -406,10 +422,12 @@ def main():
 
     processors = {
         "toefl11": TOEFL11Processor,
+        "redditl2": RedditL2DataProcessor,
     }
 
     num_labels_task = {
         "toefl11": 11,
+        "redditl2": 29,
     }
 
     if args.local_rank == -1 or args.no_cuda:

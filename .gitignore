@@ -107,6 +107,7 @@ venv.bak/
 /data/GLUE
 /data/MRPC
 /data/NLI-shared-task-2017/
+/data/RedditL2/
 
 # vscode
 .vscode/

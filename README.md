@@ -1,6 +1,11 @@
 # BERT-NLI
 A PyTorch implementation using the BERT network from Google to solve the task of NLI.
 
+To achieve this, the [PyTorch implementation of BERT](https://github.com/huggingface/pytorch-pretrained-BERT) has been used.
+This repo is not officially maintaned by Google, but the official Tensor Flow repo
+links to this one as a good PyTorch implementation which achieves the same results
+as the original implementation. 
+
 ## How to get started
 Install virtualenv and create a virtual environment by running
 ```shell
