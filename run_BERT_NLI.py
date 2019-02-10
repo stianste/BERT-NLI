@@ -148,7 +148,7 @@ class TOEFL11Processor(DataProcessor):
                 self.id2label[example_id.strip()] = label.strip()
 
 
-class RedditL2DataProcessor(object):
+class RedditL2DataProcessor(DataProcessor):
     """Processor for the RedditL2 data set"""
 
     def __init__(self):
@@ -289,7 +289,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
         assert len(segment_ids) == max_seq_length
 
         label_id = label_map[example.label]
-        if ex_index < 5:
+        if ex_index < 3:
             logger.info("*** Example ***")
             logger.info("guid: %s" % (example.guid))
             logger.info("tokens: %s" % " ".join(
@@ -352,7 +352,7 @@ def main():
                         required=True,
                         help="The name of the task to train.")
     parser.add_argument("--output_dir",
-                        default=None,
+                        default="./results/",
                         type=str,
                         required=True,
                         help="The output directory where the model predictions and checkpoints will be written.")
@@ -456,10 +456,6 @@ def main():
 
     if not args.do_train and not args.do_eval:
         raise ValueError("At least one of `do_train` or `do_eval` must be True.")
-
-    if os.path.exists(args.output_dir) and os.listdir(args.output_dir) and args.do_train:
-        raise ValueError("Output directory ({}) already exists and is not empty.".format(args.output_dir))
-    os.makedirs(args.output_dir, exist_ok=True)
 
     task_name = args.task_name.lower()
 
@@ -638,7 +634,9 @@ def main():
                   'global_step': global_step,
                   'loss': loss}
 
-        output_eval_file = os.path.join(args.output_dir, "eval_results.txt")
+        eval_filename = f'seq_{args.max_seq_length}_lower_{args.do_lower_case}_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
+        output_eval_file = os.path.join(args.output_dir, f'{eval_filename}.txt')
+
         with open(output_eval_file, "w") as writer:
             logger.info("***** Eval results *****")
             for key in sorted(result.keys()):
