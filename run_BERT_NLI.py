@@ -90,12 +90,12 @@ class TOEFL11Processor(DataProcessor):
         full_path = data_dir + constants.TOEFL11_TRAINING_DATA_PATH
         logger.info(f"Gathering training data from{full_path}")
         self._create_labels(data_dir)
-        return self._get_examples(full_path, "train")
+        return self._get_examples(full_path)
 
     def get_dev_examples(self, data_dir):
         full_path = data_dir + constants.TOEFL11_DEV_DATA_PATH
         logger.info(f"Gathering dev data from{full_path}")
-        return self._get_examples(full_path, "dev")
+        return self._get_examples(full_path)
 
     def get_labels(self):
         labels = list(set([
