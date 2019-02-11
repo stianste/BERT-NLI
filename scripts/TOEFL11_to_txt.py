@@ -10,17 +10,35 @@ one can easily train BERT on a per-language basis at a later time.
 
 """
 
+def write_sentences_to_file(sentences: list, f):
+    for sentence in sentences:
+        if sentence.strip():
+            f.write(sentence.strip() + '.\n')
+
+
 dir_path = './data/NLI-shared-task-2017/'
 full_path = f'{dir_path}{constants.TOEFL11_TRAINING_DATA_PATH}'
 
 filenames = [filename for filename in os.listdir(full_path)]
 
+id2label = {}
+
+with open(f'{dir_path}{constants.TOEFL11_TRAINING_LABELS_LOCATION}', 'r') as f:
+    #  for guid, _, _, label in f.readlines():
+    for line in f.readlines():
+        example_id, _, _, label = line.split(',')
+        id2label[example_id.strip()] = label.strip()
+
 with open (f'{dir_path}all.txt', "w") as main_file:
     for filename in filenames:
         with open(os.path.join(full_path, filename), "r") as f:
             sentences = "".join(f.readlines()).split('.')
-            for sentence in sentences:
-                if sentence.strip():
-                    main_file.write(sentence.strip() + '.\n')
+            write_sentences_to_file(sentences, main_file)
+
+            example_id = filename.split('.')[0]
+            label = id2label[example_id]
+            with open(f'{dir_path}{label}.txt', 'a+') as lang_file:
+                write_sentences_to_file(sentences, lang_file)
+                lang_file.write('\n')
 
             main_file.write('\n') # Separate docs by newline
