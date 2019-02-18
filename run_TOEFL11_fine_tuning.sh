@@ -1,7 +1,7 @@
 python run_TOEFL11_fine_tuning.py \
   --bert_model bert-large-cased \
   --do_train \
-  --train_file data/NLI-2017-shared-task/all.txt \
+  --train_file data/NLI-shared-task-2017/all.txt \
   --output_dir models \
   --num_train_epochs 5.0 \
   --learning_rate 3e-5 \
