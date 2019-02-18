@@ -28,6 +28,19 @@ chmod +x run_CoLA.sh
 ./run_CoLA.sh
 ```
 
+### IDUN
+To login on [IDUN](https://www.hpc.ntnu.no/display/hpc/Getting+Started+on+Idun) run 
+
+`ssh -l stianste idun-login3.hpc.ntnu.no`
+
+and then 
+
+`sbatch run_job.slurm`
+
+to run the job. To watch the job run 
+
+`watch -n 1 squeue -u stianste`
+
 ### Memory issues
 On most machines, this will not run out of the box due to memory issues.
 For this reason, I have been granted access to the NTNU-Luke01 Nvidia Tesla
