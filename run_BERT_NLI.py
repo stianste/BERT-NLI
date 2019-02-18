@@ -4,6 +4,7 @@ import logging
 import argparse
 import random
 import constants
+import datetime
 from tqdm import tqdm, trange
 from typing import List
 
@@ -576,8 +577,11 @@ def main():
                     global_step += 1
 
     # Save a trained model
+    timestamp = datetime.datetime.now().isoformat().split('.')[0]
+    model_filename = f'{timestamp}_seq_{args.max_seq_length}_lower_{args.do_lower_case}_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
+
     model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model it-self
-    output_model_file = os.path.join(args.output_dir, "pytorch_model.bin")
+    output_model_file = os.path.join(args.output_dir, f"{model_filename}.bin")
     if args.do_train:
         torch.save(model_to_save.state_dict(), output_model_file)
 
@@ -634,7 +638,8 @@ def main():
                   'global_step': global_step,
                   'loss': loss}
 
-        eval_filename = f'seq_{args.max_seq_length}_lower_{args.do_lower_case}_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
+        timestamp = datetime.datetime.now().isoformat().split('.')[0]
+        eval_filename = f'{timestamp}_acc{eval_accuracy}_seq_{args.max_seq_length}_lower_{args.do_lower_case}_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
         output_eval_file = os.path.join(args.output_dir, f'{eval_filename}.txt')
 
         with open(output_eval_file, "w") as writer:
