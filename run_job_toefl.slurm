@@ -5,8 +5,8 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
 #SBATCH --mem=32000
-#SBATCH --job-name="BERT-NLI-Reddit"
-#SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/reddit.out
+#SBATCH --job-name="BERT-NLI-TOEFL"
+#SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/toefl.out
 #SBATCH --mail-user=stianste@stud.ntnu.no
 #SBATCH --mail-type=ALL
 
@@ -31,6 +31,6 @@ virtualenv venv/
 source venv/bin/activate
 pip install -r requirements.txt
 
-chmod +x run_Reddit.sh
-./run_Reddit.sh
+chmod +x run_TOEFL11.sh
+./run_TOEFL11.sh
 
