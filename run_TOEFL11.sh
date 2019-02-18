@@ -6,8 +6,8 @@ python run_BERT_NLI.py \
   --do_eval \
   --data_dir $DATA_DIR \
   --bert_model bert-base-cased \
-  --max_seq_length 256 \
+  --max_seq_length 128 \
   --train_batch_size 32 \
   --learning_rate 2e-5 \
   --num_train_epochs 10 \
-  --output_dir /tmp/NLI_output/
+  --output_dir ./results

@@ -6,7 +6,7 @@
 #SBATCH --ntasks-per-node=8
 #SBATCH --mem=32000
 #SBATCH --job-name="BERT-NLI"
-#SBATCH --output=/lustre1/work/stianste/test.out
+#SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/put.out
 #SBATCH --mail-user=stianste@stud.ntnu.no
 #SBATCH --mail-type=ALL
 

@@ -108,6 +108,8 @@ venv.bak/
 /data/MRPC
 /data/NLI-shared-task-2017/
 /data/RedditL2/
+*.tar.gz
+*.bin
 
 # vscode
 .vscode/
