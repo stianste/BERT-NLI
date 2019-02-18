@@ -5,8 +5,8 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
 #SBATCH --mem=32000
-#SBATCH --job-name="BERT-NLI"
-#SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/put.out
+#SBATCH --job-name="BERT-NLI-TOEFL-TUNE"
+#SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/toefl_tune.out
 #SBATCH --mail-user=stianste@stud.ntnu.no
 #SBATCH --mail-type=ALL
 
@@ -31,5 +31,6 @@ virtualenv venv/
 source venv/bin/activate
 pip install -r requirements.txt
 
-chmod +x run_TOEFL11.sh
-./run_TOEFL11.sh
+chmod +x run_TOEFL11_fine_tuning.sh
+./run_TOEFL11_fine_tuning.sh
+

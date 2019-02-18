@@ -10,4 +10,4 @@ python run_BERT_NLI.py \
   --train_batch_size 32 \
   --learning_rate 2e-5 \
   --num_train_epochs 10 \
-  --output_dir ./results
+  --output_dir ./toefl11_results
