@@ -110,6 +110,7 @@ venv.bak/
 /data/RedditL2/
 *.tar.gz
 *.bin
+/outputs/
 
 # vscode
 .vscode/

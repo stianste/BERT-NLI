@@ -4,7 +4,7 @@
 #SBATCH --time=05:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
-#SBATCH --mem=32000
+#SBATCH --mem=64000
 #SBATCH --job-name="BERT-NLI-TOEFL-TUNE"
 #SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/toefl_tune.out
 #SBATCH --mail-user=stianste@stud.ntnu.no

@@ -40,4 +40,4 @@ with open (f'{dir_path}all.txt', "w") as main_file:
             with open(f'{dir_path}{label}.txt', 'a+') as lang_file:
                 write_sentences_to_file(sentences, lang_file)
 
-            main_file.write('\n') # Separate docs by newline
+            # main_file.write('\n') # Separate docs by newline
