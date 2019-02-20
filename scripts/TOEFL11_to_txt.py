@@ -19,7 +19,7 @@ def write_sentences_to_file(sentences: list, f):
         if sentence.strip():
             f.write(sentence.strip() + '\n')
 
-    f.write('\n')
+    f.write('\n') # Separate documents by new line
 
 dir_path = './data/NLI-shared-task-2017/'
 full_path = f'{dir_path}{constants.TOEFL11_TRAINING_DATA_PATH}'
@@ -43,5 +43,3 @@ with open (f'{dir_path}all.txt', "w") as main_file:
             label = id2label[example_id]
             with open(f'{dir_path}{label}.txt', 'a+') as lang_file:
                 write_sentences_to_file(sentences, lang_file)
-
-            # main_file.write('\n') # Separate docs by newline

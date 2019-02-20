@@ -7,4 +7,5 @@ python run_TOEFL11_fine_tuning.py \
   --learning_rate 3e-5 \
   --train_batch_size 32 \
   --max_seq_length 128
+  --do_lower_case False
 
