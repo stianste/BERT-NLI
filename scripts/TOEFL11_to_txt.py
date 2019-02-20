@@ -1,5 +1,9 @@
 import constants
 import os
+import nltk
+from nltk.tokenize import sent_tokenize
+
+nltk.download('punkt')
 
 """ 
 Creates one big txt file of the entire TOEFL11 training corpus. It does not
@@ -13,7 +17,7 @@ one can easily train BERT on a per-language basis at a later time.
 def write_sentences_to_file(sentences: list, f):
     for sentence in sentences:
         if sentence.strip():
-            f.write(sentence.strip() + '.\n')
+            f.write(sentence.strip() + '\n')
 
     f.write('\n')
 
@@ -32,7 +36,7 @@ with open(f'{dir_path}{constants.TOEFL11_TRAINING_LABELS_LOCATION}', 'r') as f:
 with open (f'{dir_path}all.txt', "w") as main_file:
     for filename in filenames:
         with open(os.path.join(full_path, filename), "r") as f:
-            sentences = "".join([line.strip() for line in f.readlines()]).split('.')
+            sentences = sent_tokenize(" ".join([line.strip() for line in f.readlines()]))
             write_sentences_to_file(sentences, main_file)
 
             example_id = filename.split('.')[0]

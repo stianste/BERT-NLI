@@ -3,3 +3,4 @@ torchvision
 pytorch-pretrained-bert
 pylint
 tqdm
+nltk
