@@ -1,6 +1,6 @@
-export DATA_DIR=./data/NLI-shared-task-2017/
+export DATA_DIR=../data/NLI-shared-task-2017/
 
-python run_BERT_NLI.py \
+python ../run_BERT_NLI.py \
   --task_name toefl11 \
   --do_train \
   --do_eval \

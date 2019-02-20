@@ -1,6 +1,6 @@
-export DATA_DIR=./data/RedditL2/text_chunks/
+export DATA_DIR=../data/RedditL2/text_chunks/
 
-python run_BERT_NLI.py \
+python ../run_BERT_NLI.py \
   --task_name redditl2 \
   --do_train \
   --do_eval \

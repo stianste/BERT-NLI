@@ -10,10 +10,10 @@
 #SBATCH --mail-user=stianste@stud.ntnu.no
 #SBATCH --mail-type=ALL
 
-WORKDIR=${SLURM_SUBMIT_DIR}
+WORKDIR=../
 cd ${WORKDIR}
 echo "We are running from this directory: $SLURM_SUBMIT_DIR"
-echo "The name of the job is: $SLURM_JOB_NAME" 
+echo "The name of the job is: $SLURM_JOB_NAME"
 echo "The job ID is $SLURM_JOB_ID"
 echo "The job was run on these nodes: $SLURM_JOB_NODELIST"
 echo "Number of nodes: $SLURM_JOB_NUM_NODES"

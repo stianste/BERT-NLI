@@ -1,4 +1,4 @@
-python run_TOEFL11_fine_tuning.py \
+python ../run_BERT_fine_tuning.py \
   --bert_model bert-large-cased \
   --do_train \
   --train_file data/NLI-shared-task-2017/all.txt \
