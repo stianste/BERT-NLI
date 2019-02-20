@@ -32,7 +32,7 @@ with open(f'{dir_path}{constants.TOEFL11_TRAINING_LABELS_LOCATION}', 'r') as f:
 with open (f'{dir_path}all.txt', "w") as main_file:
     for filename in filenames:
         with open(os.path.join(full_path, filename), "r") as f:
-            sentences = "".join(f.readlines()).split('.')
+            sentences = "".join([line.strip() for line in f.readlines()]).split('.')
             write_sentences_to_file(sentences, main_file)
 
             example_id = filename.split('.')[0]
