@@ -1,18 +1,18 @@
 #!/bin/sh
 #SBATCH --partition=EPICALL
 #SBATCH --gres=gpu:2
-#SBATCH --time=05:00:00
+#SBATCH --time=15:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
-#SBATCH --mem=32000
-#SBATCH --job-name="BERT-NLI-TOEFL"
-#SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/toefl.out
+#SBATCH --mem=64000
+#SBATCH --job-name="BERT-NLI-TOEFL-TUNE"
+#SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/fine_tune_toefl.out
 #SBATCH --mail-user=stianste@stud.ntnu.no
 #SBATCH --mail-type=ALL
 
-WORKDIR=../
+WORKDIR=${SLURM_SUBMIT_DIR}
 cd ${WORKDIR}
-echo "We are running from this directory: $WORKDIR"
+echo "We are running from this directory: $SLURM_SUBMIT_DIR"
 echo "The name of the job is: $SLURM_JOB_NAME"
 echo "The job ID is $SLURM_JOB_ID"
 echo "The job was run on these nodes: $SLURM_JOB_NODELIST"
@@ -31,6 +31,6 @@ virtualenv venv/
 source venv/bin/activate
 pip install -r requirements.txt
 
-chmod +x run_TOEFL11.sh
-./run_TOEFL11.sh
+chmod +x ./scripts/run_TOEFL11_fine_tuning.sh
+./scripts/run_TOEFL11_fine_tuning.sh
 

@@ -1,7 +1,7 @@
 #!/bin/sh
 #SBATCH --partition=EPICALL
 #SBATCH --gres=gpu:2
-#SBATCH --time=05:00:00
+#SBATCH --time=10:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
 #SBATCH --mem=32000
@@ -10,7 +10,7 @@
 #SBATCH --mail-user=stianste@stud.ntnu.no
 #SBATCH --mail-type=ALL
 
-WORKDIR=../
+WORKDIR=${SLURM_SUBMIT_DIR}
 cd ${WORKDIR}
 echo "We are running from this directory: $SLURM_SUBMIT_DIR"
 echo "The name of the job is: $SLURM_JOB_NAME"
@@ -31,6 +31,6 @@ virtualenv venv/
 source venv/bin/activate
 pip install -r requirements.txt
 
-chmod +x run_Reddit.sh
-./run_Reddit.sh
+chmod +x ./scripts/run_Reddit.sh
+./scripts/run_Reddit.sh
 
