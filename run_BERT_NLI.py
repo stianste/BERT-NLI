@@ -418,6 +418,11 @@ def main():
                         help="Loss scaling to improve fp16 numeric stability. Only used when fp16 set to True.\n"
                              "0 (default value): dynamic loss scaling.\n"
                              "Positive power of 2: static loss scaling value.\n")
+    parser.add_argument("--fine_tuned_model",
+                        default=None,
+                        type=str,
+                        help=("Indicates wheteher to use a fine tuned model instead of 'vanilla' BERT. "
+                                "Must inlcude the path to the fine-tuned model.")
 
     args = parser.parse_args()
 
@@ -467,7 +472,13 @@ def main():
     num_labels = num_labels_task[task_name]
     label_list = processor.get_labels()
 
-    tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
+    # If a fine tuned model is provided, use this one instead
+    if args.fine_tuned_model:
+        model_to_load = arg.fine_tuned_model
+    else:
+        model_to_load  = args.bert_model
+
+    tokenizer = BertTokenizer.from_pretrained(model_to_load, do_lower_case=args.do_lower_case)
 
     train_examples = None
     num_train_steps = None
@@ -477,7 +488,8 @@ def main():
             len(train_examples) / args.train_batch_size / args.gradient_accumulation_steps * args.num_train_epochs)
 
     # Prepare model
-    model = BertForSequenceClassification.from_pretrained(args.bert_model,
+
+    model = BertForSequenceClassification.from_pretrained(model_to_load,
               cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(args.local_rank),
               num_labels = num_labels)
     if args.fp16:
@@ -587,7 +599,7 @@ def main():
 
     # Load a trained model that you have fine-tuned
     model_state_dict = torch.load(output_model_file)
-    model = BertForSequenceClassification.from_pretrained(args.bert_model, state_dict=model_state_dict, num_labels=num_labels)
+    model = BertForSequenceClassification.from_pretrained(model_to_load, state_dict=model_state_dict, num_labels=num_labels)
     model.to(device)
 
     if args.do_eval and (args.local_rank == -1 or torch.distributed.get_rank() == 0):
