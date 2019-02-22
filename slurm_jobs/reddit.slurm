@@ -31,6 +31,6 @@ virtualenv venv/
 source venv/bin/activate
 pip install -r requirements.txt
 
-chmod +x ./scripts/run_Reddit.sh
-./scripts/run_Reddit.sh
+chmod +x ./scripts/reddit_fine_tune.py
+./scripts/reddit_fine_tune.sh
 

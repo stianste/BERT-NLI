@@ -31,6 +31,6 @@ virtualenv venv/
 source venv/bin/activate
 pip install -r requirements.txt
 
-chmod +x ./scripts/run_TOEFL11.sh
-./scripts/run_TOEFL11.sh
+chmod +x ./scripts/toefl_fine_tune.sh
+./scripts/toefl_fine_tune.sh
 

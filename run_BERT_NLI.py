@@ -478,6 +478,8 @@ def main():
     else:
         model_to_load  = args.bert_model
 
+    logger.info(f'Using model:', model_to_load)
+
     tokenizer = BertTokenizer.from_pretrained(model_to_load, do_lower_case=args.do_lower_case)
 
     train_examples = None
@@ -488,10 +490,10 @@ def main():
             len(train_examples) / args.train_batch_size / args.gradient_accumulation_steps * args.num_train_epochs)
 
     # Prepare model
-
     model = BertForSequenceClassification.from_pretrained(model_to_load,
               cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(args.local_rank),
               num_labels = num_labels)
+
     if args.fp16:
         model.half()
     model.to(device)
