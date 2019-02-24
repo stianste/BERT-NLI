@@ -111,6 +111,7 @@ venv.bak/
 *.tar.gz
 *.bin
 /outputs/
+*_models/
 
 # vscode
 .vscode/

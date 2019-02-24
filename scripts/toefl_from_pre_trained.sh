@@ -5,7 +5,7 @@ python ./run_BERT_NLI.py \
   --do_train \
   --do_eval \
   --data_dir $DATA_DIR \
-  --bert_model ./toefl11_models/2019-02-21T14:39:19_seq_128_lower_False_epochs_1.0_lr_3e-05.bin\
+  --bert_model ./toefl11_models/2019-02-21T14\:39\:19_seq_128_lower_False_epochs_1.0_lr_3e-05/ \
   --max_seq_length 128 \
   --train_batch_size 32 \
   --learning_rate 2e-5 \
