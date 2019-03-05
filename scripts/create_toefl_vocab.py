@@ -14,3 +14,5 @@ with open(f'{base_path}/vocab.txt', 'w') as f:
     for word in vocab:
         f.write(word)
         f.write('\n')
+
+    f.write('[UNK]\n[SEP]\n[PAD]\n[CLS]\n[MASK]')
