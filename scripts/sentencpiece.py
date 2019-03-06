@@ -21,6 +21,8 @@ def create_wordpiece_file_from_sentencepiece_file(sentencepiece_file_path):
 
                 wordpiece_file.write(new_token + '\n')
 
+        special_tokens = '[CLS]\n[UNK]\n[SEP]\n[PAD]\n[MASK]'
+        wordpiece_file.wirte(special_tokens)
 
 spm.SentencePieceTrainer.Train(arguments)
 create_wordpiece_file_from_sentencepiece_file(f'{model_prefix}.vocab')
