@@ -31,6 +31,12 @@ virtualenv venv/
 source venv/bin/activate
 pip install -r requirements.txt
 
-chmod +x ./scripts/toefl_train_lm.sh
-./scripts/toefl_train_lm.sh
-
+python ./run_BERT_fine_tuning.py \
+  --bert_model bert-large-cased \
+  --do_train \
+  --train_file data/NLI-shared-task-2017/all.txt \
+  --output_dir toefl11_models \
+  --num_train_epochs 5 \
+  --learning_rate 3e-5 \
+  --train_batch_size 32 \
+  --max_seq_length 128 \
