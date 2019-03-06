@@ -11,7 +11,6 @@ use the dev part of the corpus.
 
 Adittionally it will also make one txt consisting of each language, so that
 one can easily train BERT on a per-language basis at a later time.
-
 """
 
 def write_sentences_to_file(sentences: list, f):
