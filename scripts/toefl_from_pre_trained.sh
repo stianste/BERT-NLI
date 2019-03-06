@@ -11,4 +11,4 @@ python ./run_BERT_NLI.py \
   --learning_rate 2e-5 \
   --num_train_epochs 1 \
   --output_dir ./toefl11_results \
-  --vocab_file ./data/NLI-shared-task-2017/vocab.txt
+  --vocab_file ./data/NLI-shared-task-2017/toefl_wordpiece.vocab
