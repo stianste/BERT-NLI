@@ -475,6 +475,9 @@ def main():
                         help = "Loss scaling to improve fp16 numeric stability. Only used when fp16 set to True.\n"
                         "0 (default value): dynamic loss scaling.\n"
                         "Positive power of 2: static loss scaling value.\n")
+    parser.add_argument('--vocab_file',
+                        type=str, default=None,
+                        help="Path to the vocab file to use for the tokenizer.")
 
     args = parser.parse_args()
 
@@ -507,7 +510,10 @@ def main():
 
     os.makedirs(args.output_dir, exist_ok=True)
 
-    tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
+    if args.vocab_file:
+        tokenizer = BertTokenizer.from_pretrained(args.vocab_file, do_lower_case=args.do_lower_case)
+    else:
+        tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
 
     #train_examples = None
     num_train_optimization_steps = None

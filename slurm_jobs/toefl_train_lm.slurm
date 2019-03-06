@@ -31,7 +31,7 @@ virtualenv venv/
 source venv/bin/activate
 pip install -r requirements.txt
 
-python ./run_BERT_fine_tuning.py \
+python ./run_BERT_train_lm.py \
   --bert_model bert-large-cased \
   --do_train \
   --train_file data/NLI-shared-task-2017/all.txt \
