@@ -2,15 +2,16 @@ import sentencepiece as spm
 
 base_path = './data/NLI-shared-task-2017'
 model_prefix = base_path + '/toefl'
+vocab_size = 32000
 
 arguments = f'--input={base_path}/all.txt \
              --model_prefix={model_prefix} \
-             --vocab_size=16000 \
+             --vocab_size={vocab_size} \
              --model_type=bpe \
              --character_coverage=1.0'
 
 def create_wordpiece_file_from_sentencepiece_file(sentencepiece_file_path):
-    with open(f'{model_prefix}_wordpiece.vocab', 'w') as wordpiece_file:
+    with open(f'{model_prefix}_wordpiece_size_{vocab_size}.vocab', 'w') as wordpiece_file:
         with open(sentencepiece_file_path, 'r') as sentencepiece_file:
             for line in sentencepiece_file.readlines():
                 token = line.split()[0]
