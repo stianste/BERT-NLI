@@ -40,4 +40,4 @@ python ./run_BERT_train_lm.py \
   --learning_rate 3e-5 \
   --train_batch_size 32 \
   --max_seq_length 128 \
-  --vocab_file data/NLI-shared-task-2017/toefl_wordpiece.vocab \
+  --vocab_file data/NLI-shared-task-2017/toefl_wordpiece_size_32000.vocab \

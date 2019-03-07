@@ -515,6 +515,8 @@ def main():
     else:
         tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
 
+    vocab_size = len(tokenizer.vocab)
+
     #train_examples = None
     num_train_optimization_steps = None
     if args.do_train:
@@ -619,14 +621,20 @@ def main():
         logger.info("** ** * Saving fine - tuned model ** ** * ")
         model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model it-self
 
-        timestamp = datetime.datetime.now().isoformat().split('.')[0]
-        model_filename = f'{timestamp}_seq_{args.max_seq_length}_lower_{args.do_lower_case}_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
+        model_foldername = f'_seq_{args.max_seq_length} \
+                           _lower_{args.do_lower_case}\
+                           _epochs_{args.num_train_epochs}\
+                           _vocab_size_{vocab_size}\
+                           _lr_{args.learning_rate}'
 
-        output_model_file = os.path.join(args.output_dir, f"{model_filename}.bin")
+        output_folder = os.path.join(args.output_dir, f'{model_foldername}')
 
-        if args.do_train:
-            torch.save(model_to_save.state_dict(), output_model_file)
+        try:
+            os.mkdir(output_folder)
+        except FileExistsError:
+            pass
 
+        torch.save(model_to_save.state_dict(), f'{output_folder}/pytorch_model.bin')
 
 def _truncate_seq_pair(tokens_a, tokens_b, max_length):
     """Truncates a sequence pair in place to the maximum length."""
