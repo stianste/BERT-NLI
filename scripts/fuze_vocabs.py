@@ -23,4 +23,4 @@ new_file_path = f'./data/vocabs/{bert_vocab_file_name}_fuzed_{custom_vocab_size}
 
 with open (new_file_path, 'w') as new_file:
     for word in vocab:
-        new_file.write(f'{word}\n')
+        new_file.write(f'{word}')
