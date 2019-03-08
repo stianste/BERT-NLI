@@ -2,7 +2,7 @@ import sentencepiece as spm
 
 base_path = './data/NLI-shared-task-2017'
 model_prefix = base_path + '/toefl'
-vocab_size = 3600
+vocab_size = 4125
 
 arguments = f'--input={base_path}/all_lower.txt \
              --model_prefix={model_prefix} \
