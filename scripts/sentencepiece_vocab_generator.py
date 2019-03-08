@@ -2,9 +2,9 @@ import sentencepiece as spm
 
 base_path = './data/NLI-shared-task-2017'
 model_prefix = base_path + '/toefl'
-vocab_size = 32000
+vocab_size = 3600
 
-arguments = f'--input={base_path}/all.txt \
+arguments = f'--input={base_path}/all_lower.txt \
              --model_prefix={model_prefix} \
              --vocab_size={vocab_size} \
              --model_type=bpe \
