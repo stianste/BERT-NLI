@@ -38,9 +38,9 @@ python ./run_BERT_NLI.py \
   --do_train \
   --do_eval \
   --data_dir $DATA_DIR \
-  --bert_model bert-base-cased \
+  --bert_model bert-base-uncased \
   --max_seq_length 128 \
   --train_batch_size 32 \
   --learning_rate 2e-5 \
-  --num_train_epochs 1 \
+  --num_train_epochs 5 \
   --output_dir ./toefl11_results
