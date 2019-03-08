@@ -1,7 +1,7 @@
 #!/bin/sh
 #SBATCH --partition=EPICALL
 #SBATCH --gres=gpu:2
-#SBATCH --time=05:00:00
+#SBATCH --time=5:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
 #SBATCH --mem=64000
@@ -38,10 +38,10 @@ python ./run_BERT_NLI.py \
   --do_train \
   --do_eval \
   --data_dir $DATA_DIR \
-  --bert_model ./toefl11_models/seq_128_lower_False_epochs_5.0_lr_3e-05/ \
+  --bert_model ./toefl11_models/seq_128_lower_False_epochs_10.0_lr_3e-05/ \
   --max_seq_length 128 \
   --train_batch_size 32 \
   --learning_rate 2e-5 \
-  --num_train_epochs 5 \
+  --num_train_epochs 20 \
   --output_dir ./toefl11_results \
   --vocab_file ./data/NLI-shared-task-2017/toefl_wordpiece.vocab \
