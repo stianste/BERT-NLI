@@ -621,11 +621,11 @@ def main():
         logger.info("** ** * Saving fine - tuned model ** ** * ")
         model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model it-self
 
-        model_foldername = f'_seq_{args.max_seq_length} \
-                           _lower_{args.do_lower_case}\
-                           _epochs_{args.num_train_epochs}\
-                           _vocab_size_{vocab_size}\
-                           _lr_{args.learning_rate}'
+        model_foldername = f'''_seq_{args.max_seq_length}
+                           _lower_{args.do_lower_case}
+                           _epochs_{args.num_train_epochs}
+                           _vocab_size_{vocab_size}
+                           _lr_{args.learning_rate}'''
 
         output_folder = os.path.join(args.output_dir, f'{model_foldername}')
 
