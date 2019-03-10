@@ -124,7 +124,7 @@ class TOEFL11Processor(DataProcessor):
             with open(os.path.join(full_path, filename), "r") as f:
                 text = "".join(f.readlines()).lower()
                 example_id = filename.split(".")[0]
-                example = InputExample(guid=example_id, text_a=text, label=self.id2label[example_id]))
+                example = InputExample(guid=example_id, text_a=text, label=self.id2label[example_id])
                 examples.append(example)
 
         return examples
@@ -469,7 +469,7 @@ def main():
         tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
 
     train_examples = None
-    num_train_steps = None
+    num_train_optimization_steps = None
 
     if args.do_train:
             train_examples = processor.get_train_examples(args.data_dir)
@@ -519,7 +519,7 @@ def main():
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", len(train_examples))
         logger.info("  Batch size = %d", args.train_batch_size)
-        logger.info("  Num steps = %d", num_train_steps)
+        logger.info("  Num steps = %d", num_train_optimization_steps)
         all_input_ids = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in train_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in train_features], dtype=torch.long)
