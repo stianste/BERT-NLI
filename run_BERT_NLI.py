@@ -14,7 +14,7 @@ from torch.utils.data import TensorDataset, DataLoader, RandomSampler, Sequentia
 from torch.utils.data.distributed import DistributedSampler
 
 from pytorch_pretrained_bert.tokenization import BertTokenizer
-from pytorch_pretrained_bert.modeling import BertForSequenceClassification
+from pytorch_pretrained_bert.modeling import BertForSequenceClassification, BertConfig, WEIGHTS_NAME, CONFIG_NAME
 from pytorch_pretrained_bert.optimization import BertAdam
 from pytorch_pretrained_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 
@@ -477,14 +477,18 @@ def main():
 
     train_examples = None
     num_train_steps = None
+
     if args.do_train:
-        train_examples = processor.get_train_examples(args.data_dir)
-        num_train_steps = int(
-            len(train_examples) / args.train_batch_size / args.gradient_accumulation_steps * args.num_train_epochs)
+            train_examples = processor.get_train_examples(args.data_dir)
+            num_train_optimization_steps = int(
+                len(train_examples) / args.train_batch_size / args.gradient_accumulation_steps) * args.num_train_epochs
+            if args.local_rank != -1:
+                num_train_optimization_steps = num_train_optimization_steps // torch.distributed.get_world_size()
 
     # Prepare model
+    cache_dir = args.cache_dir if args.cache_dir else os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank))
     model = BertForSequenceClassification.from_pretrained(args.bert_model,
-              cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(args.local_rank),
+              cache_dir=cache_dir,
               num_labels = num_labels)
 
     if args.fp16:
@@ -507,30 +511,11 @@ def main():
         {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)], 'weight_decay': 0.01},
         {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
         ]
-    t_total = num_train_steps
-    if args.local_rank != -1:
-        t_total = t_total // torch.distributed.get_world_size()
-    if args.fp16:
-        try:
-            from apex.optimizers import FP16_Optimizer
-            from apex.optimizers import FusedAdam
-        except ImportError:
-            raise ImportError("Please install apex from https://www.github.com/nvidia/apex to use distributed and fp16 training.")
 
-        optimizer = FusedAdam(optimizer_grouped_parameters,
-                              lr=args.learning_rate,
-                              bias_correction=False,
-                              max_grad_norm=1.0)
-        if args.loss_scale == 0:
-            optimizer = FP16_Optimizer(optimizer, dynamic_loss_scale=True)
-        else:
-            optimizer = FP16_Optimizer(optimizer, static_loss_scale=args.loss_scale)
-
-    else:
-        optimizer = BertAdam(optimizer_grouped_parameters,
-                             lr=args.learning_rate,
-                             warmup=args.warmup_proportion,
-                             t_total=t_total)
+    optimizer = BertAdam(optimizer_grouped_parameters,
+                            lr=args.learning_rate,
+                            warmup=args.warmup_proportion,
+                            t_total=num_train_optimization_steps)
 
     global_step = 0
     nb_tr_steps = 0
@@ -566,48 +551,59 @@ def main():
                 if args.gradient_accumulation_steps > 1:
                     loss = loss / args.gradient_accumulation_steps
 
-                if args.fp16:
-                    optimizer.backward(loss)
-                else:
-                    loss.backward()
+                loss.backward()
 
                 tr_loss += loss.item()
                 nb_tr_examples += input_ids.size(0)
                 nb_tr_steps += 1
                 if (step + 1) % args.gradient_accumulation_steps == 0:
                     # modify learning rate with special warm up BERT uses
-                    lr_this_step = args.learning_rate * warmup_linear(global_step/t_total, args.warmup_proportion)
-                    for param_group in optimizer.param_groups:
-                        param_group['lr'] = lr_this_step
                     optimizer.step()
                     optimizer.zero_grad()
                     global_step += 1
 
     # Save a trained model
-    model_filename = f'seq_{args.max_seq_length}_lower_{args.do_lower_case}_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
+    model_foldername = f'seq_{args.max_seq_length}_lower_{args.do_lower_case}_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
+    full_path = f'{args.output_dir}/{model_foldername}'
 
-    model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model it-self
-    output_model_file = os.path.join(args.output_dir, f"{model_filename}.bin")
+    if not os.path.isdir(args.output_dir):
+        os.mkdir(args.output_dir)
+
+    os.mkdir(full_path)
+
     if args.do_train:
+        # Save a trained model and the associated configuration
+        model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model it-self
+        output_model_file = os.path.join(full_path, WEIGHTS_NAME)
         torch.save(model_to_save.state_dict(), output_model_file)
+        output_config_file = os.path.join(full_path, CONFIG_NAME)
+        with open(output_config_file, 'w') as f:
+            f.write(model_to_save.config.to_json_string())
 
-    # Load a trained model that you have fine-tuned
-    model_state_dict = torch.load(output_model_file)
-    model = BertForSequenceClassification.from_pretrained(args.bert_model, state_dict=model_state_dict, num_labels=num_labels)
+        # Load a trained model and config that you have fine-tuned
+        config = BertConfig(output_config_file)
+        model = BertForSequenceClassification(config, num_labels=num_labels)
+        model.load_state_dict(torch.load(output_model_file))
+    else:
+        model = BertForSequenceClassification.from_pretrained(args.bert_model, num_labels=num_labels)
+
     model.to(device)
 
     if args.do_eval and (args.local_rank == -1 or torch.distributed.get_rank() == 0):
         eval_examples = processor.get_dev_examples(args.data_dir)
         eval_features = convert_examples_to_features(
             eval_examples, label_list, args.max_seq_length, tokenizer)
+
         logger.info("***** Running evaluation *****")
         logger.info("  Num examples = %d", len(eval_examples))
         logger.info("  Batch size = %d", args.eval_batch_size)
+
         all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
         all_label_ids = torch.tensor([f.label_id for f in eval_features], dtype=torch.long)
         eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
+
         # Run prediction for full data
         eval_sampler = SequentialSampler(eval_data)
         eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.eval_batch_size)
