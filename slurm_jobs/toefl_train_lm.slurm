@@ -34,10 +34,10 @@ pip install -r requirements.txt
 python ./run_BERT_train_lm.py \
   --bert_model bert-large-uncased \
   --do_train \
-  --train_file data/NLI-shared-task-2017/all.txt \
+  --train_file data/NLI-shared-task-2017/all_lower.txt \
   --output_dir toefl11_models \
   --num_train_epochs 30 \
   --learning_rate 3e-5 \
   --train_batch_size 32 \
   --max_seq_length 128 \
-  --vocab_file data/vocabs/bert-large-uncased-vocab_fuzed_16000.vocab \
+  --vocab_file data/vocabs/bert-large-uncased-vocab_filled.txt \
