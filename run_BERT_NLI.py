@@ -122,18 +122,11 @@ class TOEFL11Processor(DataProcessor):
         filenames = [filename for filename in os.listdir(full_path)]
         for filename in filenames:
             with open(os.path.join(full_path, filename), "r") as f:
-                text = "".join(f.readlines())
+                text = "".join(f.readlines()).lower()
                 example_id = filename.split(".")[0]
-                examples.append((example_id, text))
+                example = InputExample(guid=example_id, text_a=text, label=self.id2label[example_id]))
+                examples.append(example)
 
-        return self._create_examples(examples)
-
-    def _create_examples(self, lines: List[tuple]) -> List[InputExample]:
-        """Creates examples for the training and dev sets."""
-        examples = []
-        for example_id, text in lines:
-            examples.append(
-                InputExample(guid=example_id, text_a=text, label=self.id2label[example_id]))
         return examples
 
     def _create_labels(self, data_dir):
@@ -486,7 +479,7 @@ def main():
                 num_train_optimization_steps = num_train_optimization_steps // torch.distributed.get_world_size()
 
     # Prepare model
-    cache_dir = args.cache_dir if args.cache_dir else os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank))
+    cache_dir = os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank))
     model = BertForSequenceClassification.from_pretrained(args.bert_model,
               cache_dir=cache_dir,
               num_labels = num_labels)
