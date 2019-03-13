@@ -147,8 +147,7 @@ class RedditL2DataProcessor(DataProcessor):
 
     def __init__(self):
         self.id2label = {}
-        self.europe_user_list = set()
-        self.non_europe_user_list = set()
+        self.user_list = set()
         self.europe_user2examples = {}
         self.non_europe_user2examples = {}
 
@@ -164,32 +163,33 @@ class RedditL2DataProcessor(DataProcessor):
                             InputExample(guid=f'{username}_{chunk}', text_a=text, label=language)
                         )
 
+                    self.user_list.add(username)
+
                     if is_europe:
-                        self.europe_user_list.add(username)
                         self.europe_user2examples[username] = user_examples
                     else:
-                        self.non_europe_user_list.add(username)
                         self.non_europe_user2examples[username] = user_examples
 
     def get_train_examples(self, data_dir: str) -> List[InputExample]:
         in_domain = constants.REDDIT_IN_DOMAIN
         self.discover_user_examples(f'{data_dir}/europe_data', is_europe=True)
-        num_users = len(self.europe_user_list)
+
+        num_users = len(self.user_list)
+        print('Number of europe users:', num_users)
 
         if not in_domain:
             self.discover_user_examples(f'{data_dir}/non_europe_data', is_europe=False)
-            num_users += len(self.non_europe_user_list)
 
+        num_users = len(self.user_list)
         print('Total number of users:', num_users)
 
         num_training_users = int(num_users * (1 - constants.REDDIT_L2_TEST_SPLIT))
-
         print('Number of training users', num_training_users)
 
         training_examples = []
         if in_domain:
             for _ in range(num_training_users):
-                username = self.europe_user_list.pop()
+                username = self.user_list.pop()
                 user_examples = self.europe_user2examples[username]
                 for example in user_examples:
                     training_examples.append(example)
@@ -201,8 +201,8 @@ class RedditL2DataProcessor(DataProcessor):
         dev_examples = []
         if constants.REDDIT_IN_DOMAIN:
             # Assumes that all the users reserved for training have been removed from the user list
-            while self.europe_user_list:
-                username = self.europe_user_list.pop()
+            while self.user_list:
+                username = self.user_list.pop()
                 user_examples = self.europe_user2examples[username]
                 for example in user_examples:
                     dev_examples.append(example)
@@ -621,7 +621,7 @@ def main():
                     global_step += 1
 
     # Save a trained model
-    model_foldername = f'seq_{args.max_seq_length}_lower_{args.do_lower_case}_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
+    model_foldername = f'seq_{args.max_seq_length}_batch_{args.batch_size}_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
     full_path = f'{args.output_dir}/{model_foldername}'
 
     if not os.path.isdir(args.output_dir):
@@ -698,7 +698,7 @@ def main():
                   'global_step': global_step,
                   'loss': loss}
 
-        eval_filename = f'acc{eval_accuracy:.3f}_seq_{args.max_seq_length}_lower_{args.do_lower_case}_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
+        eval_filename = f'acc{eval_accuracy:.3f}_seq_{args.max_seq_length}_batch_{args.batch_size}_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
         output_eval_file = os.path.join(args.output_dir, f'{eval_filename}.txt')
 
         with open(output_eval_file, "w") as writer:
