@@ -31,7 +31,7 @@ virtualenv venv/
 source venv/bin/activate
 pip install -r requirements.txt
 
-export DATA_DIR=./data/RedditL2/text_chunks/
+export DATA_DIR=./data/RedditL2/reddit_downsampled/
 
 python ./run_BERT_NLI.py \
   --task_name redditl2 \
@@ -43,5 +43,5 @@ python ./run_BERT_NLI.py \
   --max_seq_length 128 \
   --train_batch_size 32 \
   --learning_rate 2e-5 \
-  --num_train_epochs 1 \
+  --num_train_epochs 5 \
   --output_dir ./reddit_results

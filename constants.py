@@ -3,5 +3,6 @@ TOEFL11_DEV_DATA_PATH = "data/essays/dev/original/"
 TOEFL11_TRAINING_LABELS_LOCATION = "data/labels/train/labels.train.csv"
 TOEFL11_DEV_LABELS_LOCATION = "data/labels/dev/labels.dev.csv"
 
+REDDIT_DATA_PATH = 'data/RedditL2/reddit_downsampled'
 REDDIT_L2_TEST_SPLIT = 0.1
-USE_NON_EUROPE_EXAMPLES = False
+REDDIT_IN_DOMAIN = True

@@ -147,39 +147,105 @@ class RedditL2DataProcessor(DataProcessor):
 
     def __init__(self):
         self.id2label = {}
-        self.use_non_europe = constants.USE_NON_EUROPE_EXAMPLES
+        self.europe_user_list = set()
+        self.non_europe_user_list = set()
+        self.europe_user2examples = {}
+        self.non_europe_user2examples = {}
 
-    def read_all_examples(self, data_dir) -> List[InputExample]:
-        europe_examples = self._get_InputExamples_from_dir(data_dir + 'europe_data')
+        self.label2language = {
+            "Austria" : "German",
+            "Germany" : "German",
+            "Australia" : "English",
+            "Ireland" : "English",
+            "NewZealand" : "English",
+            "UK" : "English",
+            "US" : "English",
+            "Bulgaria" : "Bulgarian",
+            "Croatia" : "Croatian",
+            "Czech" : "Czech",
+            "Estonia" : "Estonian",
+            "Finland" : "Finish",
+            "France" : "French",
+            "Greece" : "Greek",
+            "Hungary" : "Hungarian",
+            "Italy" : "Italian",
+            "Lithuania" : "Lithuanian",
+            "Netherlands" : "Dutch",
+            "Norway" : "Norwegian",
+            "Poland" : "Polish",
+            "Portugal" : "Portuguese",
+            "Romania" : "Romanian",
+            "Russia" : "Russian",
+            "Serbia" : "Serbian",
+            "Slovenia" : "Slovenian",
+            "Spain" : "Spanish",
+            "Mexico" : "Spanish",
+            "Sweden" : "Swedish",
+            "Turkey" : "Turkish",
+        }
 
-        non_europe_examples = []
-        if constants.USE_NON_EUROPE_EXAMPLES:
-            non_europe_examples = self._get_InputExamples_from_dir(data_dir + 'non_europe_data')
+        assert len(set(self.label2language.values())) == 23
 
-        return europe_examples + non_europe_examples
-
-
-    def _get_InputExamples_from_dir(self, data_dir: str) -> List[InputExample]:
-        examples = []
+    def discover_user_examples(self, data_dir: str, is_europe)-> None:
         for language_folder in os.listdir(data_dir):
-            label = language_folder.split('.')[1]
+            label = language_folder
             for username in os.listdir(f'{data_dir}/{language_folder}'):
                 for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
+                    user_examples = []
                     with open(os.path.join(data_dir, language_folder, username, chunk), 'r') as f:
-                        text = ''.join(f.readlines())
-                        examples.append(
-                            InputExample(guid=f'{username}_{chunk}', text_a=text, label=label)
+                        text = ''.join(f.readlines()).lower()
+                        language = self.label2language[label]
+                        user_examples.append(
+                            InputExample(guid=f'{username}_{chunk}', text_a=text, label=language)
                         )
 
-        return examples
+                    if is_europe:
+                        self.europe_user_list.add(username)
+                        self.europe_user2examples = user_examples
+                    else:
+                        self.non_europe_user_list.add(username)
+                        self.non_europe_user2examples = user_examples
 
     def get_train_examples(self, data_dir: str) -> List[InputExample]:
-        self.examples = self.read_all_examples(data_dir)
-        self.split_index = int(len(self.examples) * (constants.REDDIT_L2_TEST_SPLIT))
-        return self.examples[self.split_index:]
+        in_domain = constants.REDDIT_IN_DOMAIN
+        self.discover_user_examples(f'{data_dir}/europe_data', is_europe=True)
+        num_users = len(self.europe_user_list)
+
+        if not in_domain:
+            self.discover_user_examples(f'{data_dir}/non_europe_data', is_europe=False)
+            num_users += len(self.non_europe_user_list)
+
+        print('Total number of users:', num_users)
+
+        num_training_users = int(num_users * (1 - constants.REDDIT_L2_TEST_SPLIT))
+
+        print('Number of training users', num_training_users)
+
+        training_examples = []
+        if in_domain:
+            for _ in range(num_training_users):
+                username = self.europe_user_list.pop()
+                user_examples = self.europe_user2examples[username]
+                for example in user_examples:
+                    training_examples.append(example)
+        else:
+            pass
+        return training_examples
 
     def get_dev_examples(self, data_dir):
-        return self.examples[:self.split_index]
+        dev_examples = []
+        if constants.REDDIT_IN_DOMAIN:
+            # Assumes that all the users reserved for training have been removed from the user list
+            while self.europe_user_list:
+                username = self.europe_user_list.pop()
+                user_examples = self.europe_user2examples[username]
+                for example in user_examples:
+                    dev_examples.append(example)
+
+        else:
+            pass
+
+        return dev_examples
 
     def get_labels(self):
         labels = list(set([
@@ -214,10 +280,10 @@ class RedditL2DataProcessor(DataProcessor):
             "US",
         ]))
 
-        if self.use_non_europe:
-            labels.append('Ukraine')
+        for label in labels:
+            assert label in self.label2language
 
-        return labels
+        return list(set(self.label2language.values()))
 
 
 def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer):
@@ -472,11 +538,11 @@ def main():
     num_train_optimization_steps = None
 
     if args.do_train:
-            train_examples = processor.get_train_examples(args.data_dir)
-            num_train_optimization_steps = int(
-                len(train_examples) / args.train_batch_size / args.gradient_accumulation_steps) * args.num_train_epochs
-            if args.local_rank != -1:
-                num_train_optimization_steps = num_train_optimization_steps // torch.distributed.get_world_size()
+        train_examples = processor.get_train_examples(args.data_dir)
+        num_train_optimization_steps = int(
+            len(train_examples) / args.train_batch_size / args.gradient_accumulation_steps) * args.num_train_epochs
+        if args.local_rank != -1:
+            num_train_optimization_steps = num_train_optimization_steps // torch.distributed.get_world_size()
 
     # Prepare model
     cache_dir = os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank))
