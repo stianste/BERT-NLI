@@ -5,6 +5,7 @@ from collections import Counter, defaultdict
 random.seed(1)
 
 def downsample_reddit_data(data_dir: str, median_chunks: int, label2language: dict) -> None:
+    print('Downsampling', data_dir)
     # Each class must have same number of users.
     # Find number of users tagged with each label in the data,
     # then randomly select the minimum number from each class.
@@ -22,6 +23,9 @@ def downsample_reddit_data(data_dir: str, median_chunks: int, label2language: di
             for chunk in os.listdir(f'{prefix}/{data_dir}/{language_folder}/{username}'):
                 with open(os.path.join(prefix, data_dir, language_folder, username, chunk), 'r') as f:
                     text = ''.join(f.readlines()).lower()
+                    if label == 'Ukraine':
+                        continue # Ignore Ukraine from now, as it is not included in the original article
+
                     language = label2language[label]
                     if not username in user2chunks:
                         unique_users_per_language_counter[language] += 1
@@ -33,7 +37,7 @@ def downsample_reddit_data(data_dir: str, median_chunks: int, label2language: di
     max_num_users = min([unique_users_per_language_counter[language] for 
                           language in unique_users_per_language_counter.keys()])
 
-    print('The maximum number of users for a language is:', max_num_users)
+    print('The language with the least unique users has', max_num_users, 'users')
 
     prefix = 'reddit_downsampled'
 
@@ -55,6 +59,7 @@ def downsample_reddit_data(data_dir: str, median_chunks: int, label2language: di
                 f.write(chunk)
 
 def main():
+    print('Running!')
     label2language = {
         "Austria" : "German",
         "Germany" : "German",

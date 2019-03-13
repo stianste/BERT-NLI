@@ -1,12 +1,12 @@
 #!/bin/sh
 #SBATCH --partition=EPICALL
-#SBATCH --gres=gpu:2
-#SBATCH --time=100:00:00
+#SBATCH --gres=gpu:1
+#SBATCH --time=5:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
-#SBATCH --mem=64000
-#SBATCH --job-name="BERT-NLI-TOEFL-TRAIN-LM"
-#SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/toefl_train_lm.out
+#SBATCH --mem=32000
+#SBATCH --job-name="downsample-reddit"
+#SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/downsample.out
 #SBATCH --mail-user=stianste@stud.ntnu.no
 #SBATCH --mail-type=ALL
 
@@ -26,18 +26,12 @@ module purge
 module load intel/2018b
 module load Python/3.6.6
 
-mkdir -p venv
-virtualenv venv/
-source venv/bin/activate
-pip install -r requirements.txt
+python --version
 
-python ./run_BERT_train_lm.py \
-  --bert_model bert-large-uncased \
-  --do_train \
-  --train_file data/NLI-shared-task-2017/all_lower.txt \
-  --output_dir toefl11_models \
-  --num_train_epochs 30 \
-  --learning_rate 3e-5 \
-  --train_batch_size 32 \
-  --max_seq_length 128 \
-  --vocab_file data/vocabs/bert-large-uncased-vocab_filled.txt \
+cd data/RedditL2/
+echo "Changed directory, now running downsample.py"
+ls
+
+python downsample.py
+
+echo "Slurm job finnished!"
