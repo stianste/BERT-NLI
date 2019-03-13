@@ -152,59 +152,24 @@ class RedditL2DataProcessor(DataProcessor):
         self.europe_user2examples = {}
         self.non_europe_user2examples = {}
 
-        self.label2language = {
-            "Austria" : "German",
-            "Germany" : "German",
-            "Australia" : "English",
-            "Ireland" : "English",
-            "NewZealand" : "English",
-            "UK" : "English",
-            "US" : "English",
-            "Bulgaria" : "Bulgarian",
-            "Croatia" : "Croatian",
-            "Czech" : "Czech",
-            "Estonia" : "Estonian",
-            "Finland" : "Finish",
-            "France" : "French",
-            "Greece" : "Greek",
-            "Hungary" : "Hungarian",
-            "Italy" : "Italian",
-            "Lithuania" : "Lithuanian",
-            "Netherlands" : "Dutch",
-            "Norway" : "Norwegian",
-            "Poland" : "Polish",
-            "Portugal" : "Portuguese",
-            "Romania" : "Romanian",
-            "Russia" : "Russian",
-            "Serbia" : "Serbian",
-            "Slovenia" : "Slovenian",
-            "Spain" : "Spanish",
-            "Mexico" : "Spanish",
-            "Sweden" : "Swedish",
-            "Turkey" : "Turkish",
-        }
-
-        assert len(set(self.label2language.values())) == 23
-
     def discover_user_examples(self, data_dir: str, is_europe)-> None:
         for language_folder in os.listdir(data_dir):
-            label = language_folder
+            language = language_folder
             for username in os.listdir(f'{data_dir}/{language_folder}'):
                 for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
                     user_examples = []
                     with open(os.path.join(data_dir, language_folder, username, chunk), 'r') as f:
                         text = ''.join(f.readlines()).lower()
-                        language = self.label2language[label]
                         user_examples.append(
                             InputExample(guid=f'{username}_{chunk}', text_a=text, label=language)
                         )
 
                     if is_europe:
                         self.europe_user_list.add(username)
-                        self.europe_user2examples = user_examples
+                        self.europe_user2examples[username] = user_examples
                     else:
                         self.non_europe_user_list.add(username)
-                        self.non_europe_user2examples = user_examples
+                        self.non_europe_user2examples[username] = user_examples
 
     def get_train_examples(self, data_dir: str) -> List[InputExample]:
         in_domain = constants.REDDIT_IN_DOMAIN
@@ -248,6 +213,39 @@ class RedditL2DataProcessor(DataProcessor):
         return dev_examples
 
     def get_labels(self):
+        
+        label2language = {
+            "Austria" : "German",
+            "Germany" : "German",
+            "Australia" : "English",
+            "Ireland" : "English",
+            "NewZealand" : "English",
+            "UK" : "English",
+            "US" : "English",
+            "Bulgaria" : "Bulgarian",
+            "Croatia" : "Croatian",
+            "Czech" : "Czech",
+            "Estonia" : "Estonian",
+            "Finland" : "Finish",
+            "France" : "French",
+            "Greece" : "Greek",
+            "Hungary" : "Hungarian",
+            "Italy" : "Italian",
+            "Lithuania" : "Lithuanian",
+            "Netherlands" : "Dutch",
+            "Norway" : "Norwegian",
+            "Poland" : "Polish",
+            "Portugal" : "Portuguese",
+            "Romania" : "Romanian",
+            "Russia" : "Russian",
+            "Serbia" : "Serbian",
+            "Slovenia" : "Slovenian",
+            "Spain" : "Spanish",
+            "Mexico" : "Spanish",
+            "Sweden" : "Swedish",
+            "Turkey" : "Turkish",
+        }
+
         labels = list(set([
             "Australia",
             "Austria",
@@ -281,10 +279,11 @@ class RedditL2DataProcessor(DataProcessor):
         ]))
 
         for label in labels:
-            assert label in self.label2language
+            assert label in label2language
 
-        return list(set(self.label2language.values()))
-
+        language_list = list(set(label2language.values()))
+        assert len(language_list) == 23
+        return language_list 
 
 def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer):
     """Loads a data file into a list of `InputBatch`s."""
@@ -349,7 +348,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
         assert len(segment_ids) == max_seq_length
 
         label_id = label_map[example.label]
-        if ex_index < 3:
+        if ex_index < 10:
             logger.info("*** Example ***")
             logger.info("guid: %s" % (example.guid))
             logger.info("tokens: %s" % " ".join(
