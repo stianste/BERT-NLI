@@ -5,6 +5,7 @@ import argparse
 import random
 import constants
 import datetime
+import time
 from tqdm import tqdm, trange
 from typing import List
 
@@ -621,7 +622,8 @@ def main():
                     global_step += 1
 
     # Save a trained model
-    model_foldername = f'seq_{args.max_seq_length}_batch_{args.batch_size}_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
+    timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%m-%d %H:%M')
+    model_foldername = f'{timestamp}_seq_{args.max_seq_length}_batch_{args.batch_size}_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
     full_path = f'{args.output_dir}/{model_foldername}'
 
     if not os.path.isdir(args.output_dir):
@@ -698,7 +700,8 @@ def main():
                   'global_step': global_step,
                   'loss': loss}
 
-        eval_filename = f'acc{eval_accuracy:.3f}_seq_{args.max_seq_length}_batch_{args.batch_size}_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
+        timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%m-%d %H:%M')
+        eval_filename = f'{timestamp}_acc{eval_accuracy:.3f}_seq_{args.max_seq_length}_batch_{args.batch_size}_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
         output_eval_file = os.path.join(args.output_dir, f'{eval_filename}.txt')
 
         with open(output_eval_file, "w") as writer:
