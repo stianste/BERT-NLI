@@ -41,7 +41,7 @@ python ./run_BERT_NLI.py \
   --data_dir $DATA_DIR \
   --bert_model bert-large-uncased \
   --max_seq_length 128 \
-  --train_batch_size 32 \
+  --train_batch_size 8 \
   --learning_rate 2e-5 \
   --num_train_epochs 5 \
   --output_dir ./reddit_results
