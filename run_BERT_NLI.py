@@ -188,28 +188,25 @@ class RedditL2DataProcessor(DataProcessor):
         print('Number of training users', num_training_users)
 
         training_examples = []
-        if in_domain:
-            for _ in range(num_training_users):
-                username = self.user_list.pop()
-                user_examples = self.europe_user2examples[username]
-                for example in user_examples:
-                    training_examples.append(example)
-        else:
-            pass
+        for _ in range(num_training_users):
+            username = self.user_list.pop()
+            user_examples = self.europe_user2examples[username]
+            for example in user_examples:
+                training_examples.append(example)
         return training_examples
 
     def get_dev_examples(self, data_dir):
         dev_examples = []
-        if constants.REDDIT_IN_DOMAIN:
-            # Assumes that all the users reserved for training have been removed from the user list
-            while self.user_list:
-                username = self.user_list.pop()
+        # Assumes that all the users reserved for training have been removed from the user list
+        while self.user_list:
+            username = self.user_list.pop()
+            if constants.REDDIT_IN_DOMAIN:
                 user_examples = self.europe_user2examples[username]
-                for example in user_examples:
-                    dev_examples.append(example)
+            else:
+                user_examples = self.non_europe_user2examples[username]
 
-        else:
-            pass
+            for example in user_examples:
+                dev_examples.append(example)
 
         return dev_examples
 
@@ -392,6 +389,9 @@ def warmup_linear(x, warmup=0.002):
     if x < warmup:
         return x/warmup
     return 1.0 - x
+
+def get_timestamp():
+    datetime.datetime.fromtimestamp(time.time()).strftime('%m-%d_%H:%M')
 
 def main():
     parser = argparse.ArgumentParser()
@@ -622,7 +622,7 @@ def main():
                     global_step += 1
 
     # Save a trained model
-    timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%m-%d %H:%M')
+    timestamp = get_timestamp()
     model_foldername = f'{timestamp}_seq_{args.max_seq_length}_batch_{args.train_batch_size }_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
     full_path = f'{args.output_dir}/{model_foldername}'
 
@@ -700,7 +700,7 @@ def main():
                   'global_step': global_step,
                   'loss': loss}
 
-        timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%m-%d %H:%M')
+        timestamp = get_timestamp()
         eval_filename = f'{timestamp}_acc{eval_accuracy:.3f}_seq_{args.max_seq_length}_batch_{args.train_batch_size }_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
         output_eval_file = os.path.join(args.output_dir, f'{eval_filename}.txt')
 
