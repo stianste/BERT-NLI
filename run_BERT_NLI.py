@@ -149,6 +149,7 @@ class RedditL2DataProcessor(DataProcessor):
     def __init__(self):
         self.id2label = {}
         self.user_list = set()
+        self.lang2user = {}
         self.europe_user2examples = {}
         self.non_europe_user2examples = {}
 
@@ -156,6 +157,7 @@ class RedditL2DataProcessor(DataProcessor):
         for language_folder in os.listdir(data_dir):
             language = language_folder
             for username in os.listdir(f'{data_dir}/{language_folder}'):
+                self.lang2user[username] = language
                 for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
                     user_examples = []
                     with open(os.path.join(data_dir, language_folder, username, chunk), 'r') as f:
@@ -188,11 +190,20 @@ class RedditL2DataProcessor(DataProcessor):
         print('Number of training users', num_training_users)
 
         training_examples = []
+        languages = self.get_labels()
+        lang_idx = 0
+
         for _ in range(num_training_users):
-            username = self.user_list.pop()
+            # Select users uniformly accross languages
+            username = self.lang2user[languages[lang_idx % len(languages)]]
+            lang_idx += 1
+
+            self.user_list.remove(username)
             user_examples = self.europe_user2examples[username]
+
             for example in user_examples:
                 training_examples.append(example)
+
         return training_examples
 
     def get_dev_examples(self, data_dir):
@@ -490,7 +501,7 @@ def main():
 
     num_labels_task = {
         "toefl11": 11,
-        "redditl2": 29,
+        "redditl2": 23,
     }
 
     if args.local_rank == -1 or args.no_cuda:
