@@ -150,7 +150,7 @@ class RedditL2DataProcessor(DataProcessor):
     def __init__(self):
         self.id2label = {}
         self.user_list = set()
-        self.lang2users = defaultdict(list)
+        self.lang2users = defaultdict(set)
         self.europe_user2examples = {}
         self.non_europe_user2examples = {}
 
@@ -158,7 +158,13 @@ class RedditL2DataProcessor(DataProcessor):
         for language_folder in os.listdir(data_dir):
             language = language_folder
             for username in os.listdir(f'{data_dir}/{language_folder}'):
-                self.lang2users[language].append(username)
+                # Lithuania only has 104 users, so this is the max number of users per language
+                if len(self.lang2users[language]) > 104:
+                    break
+
+                self.lang2users[language].add(username)
+                self.user_list.add(username)
+
                 for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
                     user_examples = []
                     with open(os.path.join(data_dir, language_folder, username, chunk), 'r') as f:
@@ -167,12 +173,15 @@ class RedditL2DataProcessor(DataProcessor):
                             InputExample(guid=f'{username}_{chunk}', text_a=text, label=language)
                         )
 
-                    self.user_list.add(username)
-
+                    # We cap all user examples at 3 and 17 respectively,
+                    # as this is the mean number of chunks per user
                     if is_europe:
-                        self.europe_user2examples[username] = user_examples
+                        self.europe_user2examples[username] = user_examples[:3]
                     else:
-                        self.non_europe_user2examples[username] = user_examples
+                        self.non_europe_user2examples[username] = user_examples[:17]
+
+        for language, user_list in self.lang2users.items():
+            print(language, 'has', len(user_list), 'users.')
 
     def get_train_examples(self, data_dir: str) -> List[InputExample]:
         in_domain = constants.REDDIT_IN_DOMAIN
@@ -294,6 +303,40 @@ class RedditL2DataProcessor(DataProcessor):
         language_list = list(set(label2language.values()))
         assert len(language_list) == 23
         return language_list 
+
+class Reddit2TOEFL11Processor(DataProcessor):
+    """
+    A simple data processor for using the training data of reddit and evaluating on
+    the TOEFL11 dev set.
+    """
+    def __init__(self):
+        self.toefl_processor = TOEFL11Processor()
+        self.reddit_processor = RedditL2DataProcessor()
+
+    def get_train_examples(self, data_dir):
+        return self.reddit_processor.get_train_examples(data_dir)
+
+    def get_dev_examples(self, _):
+        return self.toefl_processor.get_dev_examples(constants.TOEFL11_DEV_DATA_PATH)
+
+    def get_labels(self):
+        toefl_label_map = {
+            "HIN" : "Hindi",
+            "ARA" : "Arabic",
+            "JPN" : "Japanese",
+            "GER" : "German",
+            "TEL" : "Telugu",
+            "KOR" : "Korean",
+            "SPA" : "Spanish",
+            "ITA" : "Italian",
+            "CHI" : "Chinese",
+            "FRE" : "French",
+            "TUR" : "Turkish",
+        }
+
+        self.common_labels = set(toefl_label_map.values()).intersection(self.reddit_processor.get_labels())
+        print("Lables which are common for reddit and toefl:", self.common_labels)
+        return self.common_labels
 
 def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer):
     """Loads a data file into a list of `InputBatch`s."""
