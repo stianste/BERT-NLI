@@ -8,6 +8,7 @@ import datetime
 import time
 from tqdm import tqdm, trange
 from typing import List
+from collections import defaultdict
 
 import numpy as np
 import torch
@@ -149,7 +150,7 @@ class RedditL2DataProcessor(DataProcessor):
     def __init__(self):
         self.id2label = {}
         self.user_list = set()
-        self.lang2user = {}
+        self.lang2users = defaultdict(list)
         self.europe_user2examples = {}
         self.non_europe_user2examples = {}
 
@@ -157,7 +158,7 @@ class RedditL2DataProcessor(DataProcessor):
         for language_folder in os.listdir(data_dir):
             language = language_folder
             for username in os.listdir(f'{data_dir}/{language_folder}'):
-                self.lang2user[username] = language
+                self.lang2users[language].append(username)
                 for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
                     user_examples = []
                     with open(os.path.join(data_dir, language_folder, username, chunk), 'r') as f:
@@ -195,7 +196,7 @@ class RedditL2DataProcessor(DataProcessor):
 
         for _ in range(num_training_users):
             # Select users uniformly accross languages
-            username = self.lang2user[languages[lang_idx % len(languages)]]
+            username = self.lang2users[languages[lang_idx % len(languages)]].pop()
             lang_idx += 1
 
             self.user_list.remove(username)
