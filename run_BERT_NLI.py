@@ -159,7 +159,7 @@ class RedditL2DataProcessor(DataProcessor):
             language = language_folder
             for username in os.listdir(f'{data_dir}/{language_folder}'):
                 # Lithuania only has 104 users, so this is the max number of users per language
-                if len(self.lang2users[language]) > 104:
+                if len(self.lang2users[language]) >= 104:
                     break
 
                 self.lang2users[language].add(username)
@@ -181,23 +181,23 @@ class RedditL2DataProcessor(DataProcessor):
                         self.non_europe_user2examples[username] = user_examples[:17]
 
         for language, user_list in self.lang2users.items():
-            print(language, 'has', len(user_list), 'users.')
+            assert len(user_list) == 104, f'{language} has {len(user_list)} users.'
 
     def get_train_examples(self, data_dir: str) -> List[InputExample]:
         in_domain = constants.REDDIT_IN_DOMAIN
         self.discover_user_examples(f'{data_dir}/europe_data', is_europe=True)
 
         num_users = len(self.user_list)
-        print('Number of europe users:', num_users)
+        logger.info(f'Number of europe users: {num_users}')
 
         if not in_domain:
             self.discover_user_examples(f'{data_dir}/non_europe_data', is_europe=False)
 
         num_users = len(self.user_list)
-        print('Total number of users:', num_users)
+        logger.info(f'Number of europe users: {num_users}')
 
         num_training_users = int(num_users * (1 - constants.REDDIT_L2_TEST_SPLIT))
-        print('Number of training users', num_training_users)
+        logger.info(f'Number of europe users: {num_training_users}')
 
         training_examples = []
         languages = self.get_labels()
@@ -210,6 +210,7 @@ class RedditL2DataProcessor(DataProcessor):
 
             self.user_list.remove(username)
             user_examples = self.europe_user2examples[username]
+            logger.info(f'{username} has {len(user_examples)} examples')
 
             for example in user_examples:
                 training_examples.append(example)
@@ -335,7 +336,7 @@ class Reddit2TOEFL11Processor(DataProcessor):
         }
 
         self.common_labels = set(toefl_label_map.values()).intersection(self.reddit_processor.get_labels())
-        print("Lables which are common for reddit and toefl:", self.common_labels)
+        logger.info(f'Lables which are common for reddit and toefl: {self.common_labels}')
         return self.common_labels
 
 def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer):
@@ -446,7 +447,7 @@ def warmup_linear(x, warmup=0.002):
     return 1.0 - x
 
 def get_timestamp():
-    datetime.datetime.fromtimestamp(time.time()).strftime('%m-%d_%H:%M')
+    return datetime.datetime.fromtimestamp(time.time()).strftime('%m-%d_%H:%M')
 
 def main():
     parser = argparse.ArgumentParser()
