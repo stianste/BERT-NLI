@@ -158,28 +158,33 @@ class RedditL2DataProcessor(DataProcessor):
         for language_folder in os.listdir(data_dir):
             language = language_folder
             for username in os.listdir(f'{data_dir}/{language_folder}'):
-                # Lithuania only has 104 users, so this is the max number of users per language
-                if len(self.lang2users[language]) >= 104:
-                    break
 
                 self.lang2users[language].add(username)
                 self.user_list.add(username)
 
+                user_examples = []
                 for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
-                    user_examples = []
                     with open(os.path.join(data_dir, language_folder, username, chunk), 'r') as f:
                         text = ''.join(f.readlines()).lower()
                         user_examples.append(
                             InputExample(guid=f'{username}_{chunk}', text_a=text, label=language)
                         )
 
-                    # We cap all user examples at 3 and 17 respectively,
-                    # as this is the mean number of chunks per user
                     if is_europe:
-                        self.europe_user2examples[username] = user_examples[:3]
+                        self.europe_user2examples[username] = user_examples
                     else:
-                        self.non_europe_user2examples[username] = user_examples[:17]
+                        self.non_europe_user2examples[username] = user_examples
 
+        user_has_more_than_one_chunk = False
+
+        for username, example_list in self.europe_user2examples.items():
+            num_examples = len(example_list)
+            if num_examples > 1:
+                user_has_more_than_one_chunk = True
+
+        if not user_has_more_than_one_chunk:
+            logger.warning('All users have only one example/chunk')
+             
         for language, user_list in self.lang2users.items():
             assert len(user_list) == 104, f'{language} has {len(user_list)} users.'
 

@@ -23,8 +23,13 @@ def get_data_from_dir(data_dir: str, label2language: dict,
     username2lang = {}
 
     for label_folder in os.listdir(f'{data_dir}'):
+        logger.info(f'Dowsampling {label_folder} in {data_dir}')
+
         label = label_folder.split('.')[1]
+        if label == 'Ukraine':
+            continue # Ignore Ukraine from now, as it is not included in the original article
         language = label2language[label]
+
         for username in os.listdir(f'{data_dir}/{label_folder}'):
             if white_list:
                 if not username in white_list:
@@ -36,9 +41,7 @@ def get_data_from_dir(data_dir: str, label2language: dict,
 
             for chunk in os.listdir(f'{data_dir}/{label_folder}/{username}'):
                 with open(os.path.join(data_dir, label_folder, username, chunk), 'r') as f:
-                    if label == 'Ukraine':
-                        continue # Ignore Ukraine from now, as it is not included in the original article
-                    text = '\n'.join(f.readlines()).lower()
+                    text = ''.join(f.readlines()).lower()
                     user_chunks.append(text)
 
             user2chunks[username] = random.sample(user_chunks, min(max_chunks_per_user, len(user_chunks)))
@@ -48,13 +51,18 @@ def get_data_from_dir(data_dir: str, label2language: dict,
 
     sampled_users = set()
 
-    for lang_usernames in lang2usernames.values():
+    for lang, lang_usernames in lang2usernames.items():
+        if not len(lang_usernames) == 104:
+            logger.warning(f'{lang} does not have 104 users, it has {len(lang_usernames)}')
         assert len(lang_usernames) == 104
+
         sampled_users = sampled_users.union(lang_usernames)
 
+    logger.info(f'Total number of users are: {len(sampled_users)}, should be {104 * 23}')
     assert len(sampled_users) == 104 * 23 # 104 users for each of the 23 labels
 
-    for username in user2chunks.keys():
+    usernames = [key for key in user2chunks.keys()]
+    for username in usernames:
         if not username in sampled_users:
             del user2chunks[username]
             del username2lang[username]
@@ -62,8 +70,6 @@ def get_data_from_dir(data_dir: str, label2language: dict,
     return user2chunks, username2lang
 
 def write_user_chunks(data_dir: str, user2chunks: dict, username2lang: dict) -> None:
-
-    logger.info(f'Downsampling {data_dir}')
 
     one_user_has_more_than_one_chunk = False
 
@@ -76,7 +82,6 @@ def write_user_chunks(data_dir: str, user2chunks: dict, username2lang: dict) -> 
 
         num_chunks = len(user_chunks)
         if num_chunks > 1:
-            logger.info(f'{username} has {num_chunks} chunks.')
             one_user_has_more_than_one_chunk = True
 
         user_folder = f'{data_dir}/{user_label}/{username}'

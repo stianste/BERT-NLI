@@ -1,6 +1,5 @@
 #!/bin/sh
-#SBATCH --partition=EPICALL
-#SBATCH --gres=gpu:1
+#SBATCH --partition=WORKQ
 #SBATCH --time=5:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
@@ -26,11 +25,8 @@ module purge
 module load intel/2018b
 module load Python/3.6.6
 
-python --version
-
 cd data/RedditL2/
 echo "Changed directory, now running downsample.py"
-ls
 
 python downsample.py
 
