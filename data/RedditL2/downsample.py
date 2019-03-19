@@ -16,6 +16,8 @@ def downsample_reddit_data(data_dir: str, median_chunks: int, label2language: di
     # then randomly select the minimum number from each class.
     # Number of chunks is still not equal, so cap it at the median. Ish 3, vs 17
 
+    logger.info(f'Downsampling {data_dir}')
+
     unique_users_per_language_counter = Counter()
     user2chunks = defaultdict(list)
     user2label = {}
@@ -50,6 +52,17 @@ def downsample_reddit_data(data_dir: str, median_chunks: int, label2language: di
 
     for username in user2chunks.keys():
         user_label = user2label[username]
+
+        language_folder = f'{prefix}/{data_dir}/{user_label}'
+        if not os.path.exists(language_folder):
+            os.makedirs(language_folder)
+
+        num_users_for_language = len([name for name in os.listdir(language_folder) 
+                                            if os.path.isfile(name)])
+
+        if num_users_for_language >= max_num_users:
+            logger.info(f'{user_label} now has {max_num_users} users. Not addind more.')
+
         user_chunks = user2chunks[username]
         user_chunks = random.sample(user_chunks, min(median_chunks, len(user_chunks)))
 
@@ -58,9 +71,6 @@ def downsample_reddit_data(data_dir: str, median_chunks: int, label2language: di
             logger.info(f'{username} has {num_chunks} chunks.')
             one_user_has_more_than_one_chunk = True
 
-        language_folder = f'{prefix}/{data_dir}/{user_label}'
-        if not os.path.exists(language_folder):
-            os.makedirs(language_folder)
 
         user_folder = f'{prefix}/{data_dir}/{user_label}/{username}'
         if not os.path.exists(user_folder):
