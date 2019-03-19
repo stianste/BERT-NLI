@@ -5,4 +5,4 @@ pylint
 tqdm
 nltk
 sentencepiece
-
+scikit-learn

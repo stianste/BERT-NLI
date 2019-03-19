@@ -20,6 +20,8 @@ from pytorch_pretrained_bert.modeling import BertForSequenceClassification, Bert
 from pytorch_pretrained_bert.optimization import BertAdam
 from pytorch_pretrained_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 
+from sklearn.metrics import f1_score, precision_score, recall_score
+
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
                     level = logging.INFO)
@@ -407,7 +409,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
         assert len(segment_ids) == max_seq_length
 
         label_id = label_map[example.label]
-        if ex_index < 10:
+        if ex_index < 5:
             logger.info("*** Example ***")
             logger.info("guid: %s" % (example.guid))
             logger.info("tokens: %s" % " ".join(
@@ -732,6 +734,8 @@ def main():
         model.eval()
         eval_loss, eval_accuracy = 0, 0
         nb_eval_steps, nb_eval_examples = 0, 0
+        all_inputs = np.array()
+        all_logits = np.array()
  
         for input_ids, input_mask, segment_ids, label_ids in tqdm(eval_dataloader, desc="Evaluating"):
             input_ids = input_ids.to(device)
@@ -745,6 +749,9 @@ def main():
 
             logits = logits.detach().cpu().numpy()
             label_ids = label_ids.to('cpu').numpy()
+
+            all_inputs = np.append(all_inputs, label_ids)
+            all_logits = np.append(all_inputs, label_ids)
             tmp_eval_accuracy = accuracy(logits, label_ids)
 
             eval_loss += tmp_eval_loss.mean().item()
@@ -753,11 +760,17 @@ def main():
             nb_eval_examples += input_ids.size(0)
             nb_eval_steps += 1
 
+        f1 = f1_score(all_inputs, all_logits, average='macro')
+        precision = precision_score(all_inputs, all_logits, average='macro')
+        recall = recall_score(all_inputs, all_logits, average='macro')
         eval_loss = eval_loss / nb_eval_steps
         eval_accuracy = eval_accuracy / nb_eval_examples
         loss = tr_loss/nb_tr_steps if args.do_train else None
         result = {'eval_loss': eval_loss,
                   'eval_accuracy': eval_accuracy,
+                  'f1': f1,
+                  'precision': precision,
+                  'recall': recall,
                   'global_step': global_step,
                   'loss': loss}
 
