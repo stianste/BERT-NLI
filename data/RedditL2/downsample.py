@@ -1,11 +1,16 @@
 import os
 import random
+import logging
 from collections import Counter, defaultdict
+
+logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+                    datefmt = '%m/%d/%Y %H:%M:%S',
+                    level = logging.INFO)
+logger = logging.getLogger(__name__)
 
 random.seed(1)
 
 def downsample_reddit_data(data_dir: str, median_chunks: int, label2language: dict) -> None:
-    print('Downsampling', data_dir)
     # Each class must have same number of users.
     # Find number of users tagged with each label in the data,
     # then randomly select the minimum number from each class.
@@ -22,9 +27,9 @@ def downsample_reddit_data(data_dir: str, median_chunks: int, label2language: di
         for username in os.listdir(f'{prefix}/{data_dir}/{language_folder}'):
             for chunk in os.listdir(f'{prefix}/{data_dir}/{language_folder}/{username}'):
                 with open(os.path.join(prefix, data_dir, language_folder, username, chunk), 'r') as f:
-                    text = ''.join(f.readlines()).lower()
                     if label == 'Ukraine':
                         continue # Ignore Ukraine from now, as it is not included in the original article
+                    text = ''.join(f.readlines()).lower()
 
                     language = label2language[label]
                     if not username in user2chunks:
@@ -32,19 +37,26 @@ def downsample_reddit_data(data_dir: str, median_chunks: int, label2language: di
                     user2chunks[username].append(text)
                     user2label[username] = language
 
-    print(unique_users_per_language_counter)
+    logger.info(unique_users_per_language_counter)
 
     max_num_users = min([unique_users_per_language_counter[language] for 
                           language in unique_users_per_language_counter.keys()])
 
-    print('The language with the least unique users has', max_num_users, 'users')
+    logger.info(f'The language with the least unique users has {max_num_users} users')
 
     prefix = 'reddit_downsampled'
+
+    one_user_has_more_than_one_chunk = False
 
     for username in user2chunks.keys():
         user_label = user2label[username]
         user_chunks = user2chunks[username]
         user_chunks = random.sample(user_chunks, min(median_chunks, len(user_chunks)))
+
+        num_chunks = len(user_chunks)
+        if num_chunks > 1:
+            logger.info(f'{username} has {num_chunks} chunks.')
+            one_user_has_more_than_one_chunk = True
 
         language_folder = f'{prefix}/{data_dir}/{user_label}'
         if not os.path.exists(language_folder):
@@ -58,8 +70,11 @@ def downsample_reddit_data(data_dir: str, median_chunks: int, label2language: di
             with open(f'{user_folder}/chunk{chunk_num}', 'w') as f:
                 f.write(chunk)
 
+    if not one_user_has_more_than_one_chunk:
+        logger.warning('All users only had 1 chunk.')
+
 def main():
-    print('Running!')
+    logger.info('Running!')
     label2language = {
         "Austria" : "German",
         "Germany" : "German",
