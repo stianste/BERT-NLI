@@ -10,74 +10,81 @@ logger = logging.getLogger(__name__)
 
 random.seed(1)
 
-def downsample_reddit_data(data_dir: str, median_chunks: int, label2language: dict) -> None:
+def get_data_from_dir(data_dir: str, label2language: dict,
+                        max_chunks_per_user: int, white_list: set=None):
+
     # Each class must have same number of users.
     # Find number of users tagged with each label in the data,
     # then randomly select the minimum number from each class.
     # Number of chunks is still not equal, so cap it at the median. Ish 3, vs 17
 
-    logger.info(f'Downsampling {data_dir}')
-
-    unique_users_per_language_counter = Counter()
     user2chunks = defaultdict(list)
-    user2label = {}
+    lang2usernames = defaultdict(set)
+    username2lang = {}
 
-    prefix = 'text_chunks'
+    for label_folder in os.listdir(f'{data_dir}'):
+        label = label_folder.split('.')[1]
+        language = label2language[label]
+        for username in os.listdir(f'{data_dir}/{label_folder}'):
+            if white_list:
+                if not username in white_list:
+                    continue
 
-    for language_folder in os.listdir(f'{prefix}/{data_dir}'):
-        label = language_folder.split('.')[1]
-        for username in os.listdir(f'{prefix}/{data_dir}/{language_folder}'):
-            for chunk in os.listdir(f'{prefix}/{data_dir}/{language_folder}/{username}'):
-                with open(os.path.join(prefix, data_dir, language_folder, username, chunk), 'r') as f:
+            lang2usernames[language].add(username)
+            username2lang[username] = language
+            user_chunks = []
+
+            for chunk in os.listdir(f'{data_dir}/{label_folder}/{username}'):
+                with open(os.path.join(data_dir, label_folder, username, chunk), 'r') as f:
                     if label == 'Ukraine':
                         continue # Ignore Ukraine from now, as it is not included in the original article
-                    text = ''.join(f.readlines()).lower()
+                    text = '\n'.join(f.readlines()).lower()
+                    user_chunks.append(text)
 
-                    language = label2language[label]
-                    if not username in user2chunks:
-                        unique_users_per_language_counter[language] += 1
-                    user2chunks[username].append(text)
-                    user2label[username] = language
+            user2chunks[username] = random.sample(user_chunks, min(max_chunks_per_user, len(user_chunks)))
 
-    logger.info(unique_users_per_language_counter)
+    for language, lang_usernames in lang2usernames.items():
+        lang2usernames[language] = random.sample(lang_usernames, 104)
 
-    max_num_users = min([unique_users_per_language_counter[language] for 
-                          language in unique_users_per_language_counter.keys()])
+    sampled_users = set()
 
-    logger.info(f'The language with the least unique users has {max_num_users} users')
+    for lang_usernames in lang2usernames.values():
+        assert len(lang_usernames) == 104
+        sampled_users = sampled_users.union(lang_usernames)
 
-    prefix = 'reddit_downsampled'
+    assert len(sampled_users) == 104 * 23 # 104 users for each of the 23 labels
+
+    for username in user2chunks.keys():
+        if not username in sampled_users:
+            del user2chunks[username]
+            del username2lang[username]
+
+    return user2chunks, username2lang
+
+def write_user_chunks(data_dir: str, user2chunks: dict, username2lang: dict) -> None:
+
+    logger.info(f'Downsampling {data_dir}')
 
     one_user_has_more_than_one_chunk = False
 
-    for username in user2chunks.keys():
-        user_label = user2label[username]
+    for username, user_chunks in user2chunks.items():
+        user_label = username2lang[username]
+        language_folder = f'{data_dir}/{user_label}'
 
-        language_folder = f'{prefix}/{data_dir}/{user_label}'
         if not os.path.exists(language_folder):
             os.makedirs(language_folder)
-
-        num_users_for_language = len([name for name in os.listdir(language_folder) 
-                                            if os.path.isfile(name)])
-
-        if num_users_for_language >= max_num_users:
-            logger.info(f'{user_label} now has {max_num_users} users. Not addind more.')
-
-        user_chunks = user2chunks[username]
-        user_chunks = random.sample(user_chunks, min(median_chunks, len(user_chunks)))
 
         num_chunks = len(user_chunks)
         if num_chunks > 1:
             logger.info(f'{username} has {num_chunks} chunks.')
             one_user_has_more_than_one_chunk = True
 
-
-        user_folder = f'{prefix}/{data_dir}/{user_label}/{username}'
+        user_folder = f'{data_dir}/{user_label}/{username}'
         if not os.path.exists(user_folder):
             os.makedirs(user_folder)
 
         for chunk_num, chunk in enumerate(user_chunks):
-            with open(f'{user_folder}/chunk{chunk_num}', 'w') as f:
+            with open(f'{user_folder}/chunk{chunk_num + 1}', 'w') as f:
                 f.write(chunk)
 
     if not one_user_has_more_than_one_chunk:
@@ -117,14 +124,18 @@ def main():
         "Turkey" : "Turkish",
     }
 
-    europe_path = 'europe_data'
-    non_europe_path = 'non_europe_data'
+    europe_folder = 'reddit_downsampled/europe_data'
+    non_europe_folder = 'reddit_downsampled/non_europe_data'
+    os.makedirs(europe_folder, exist_ok=True)
+    os.makedirs(non_europe_folder, exist_ok=True)
 
-    os.makedirs(f'reddit_downsampled/{europe_path}', exist_ok=True)
-    os.makedirs(f'reddit_downsampled/{non_europe_path}', exist_ok=True)
+    europe_user2chunks, username2lang = get_data_from_dir('text_chunks/europe_data',
+                                                            label2language, 3)
+    write_user_chunks(europe_folder, europe_user2chunks, username2lang)
 
-    downsample_reddit_data(europe_path, 3, label2language)
-    downsample_reddit_data(non_europe_path, 17, label2language)
+    non_europe_user2chunks, _ = get_data_from_dir('text_chunks/non_europe_data',
+                                    label2language, 17, white_list=europe_user2chunks.keys())
+    write_user_chunks(non_europe_folder, non_europe_user2chunks, username2lang)
 
 if __name__ == "__main__":
     main()
