@@ -84,6 +84,12 @@ class DataProcessor(object):
                 lines.append(line)
             return lines
 
+    def _get_dev_fold(self, examples, fold_number, fold_size):
+        return examples[fold_number * fold_size : (fold_number + 1) * fold_size]
+
+    def _get_train_fold(self, examples, fold_number, fold_size):
+        return examples[0:fold_number * fold_size] + examples[(fold_number + 1) * fold_size : ]
+
 
 class TOEFL11Processor(DataProcessor):
     """Processor for the TOEFL11 data set."""
@@ -146,24 +152,20 @@ class TOEFL11Processor(DataProcessor):
                 self.id2label[example_id.strip()] = label.strip()
 
 
-class RedditL2DataProcessor(DataProcessor):
+class RedditInDomainDataProcessor(DataProcessor):
     """Processor for the RedditL2 data set"""
 
-    def __init__(self):
-        self.id2label = {}
-        self.user_list = set()
-        self.lang2users = defaultdict(set)
-        self.europe_user2examples = {}
-        self.non_europe_user2examples = {}
+    def __init__(self, fold_number):
+        self.fold_number = fold_number
+        self.user2examples = {}
+        self.lang2usernames = defaultdict(list)
+        self.total_num_examples = 0
 
-    def discover_user_examples(self, data_dir: str, is_europe)-> None:
+    def discover_examples(self, data_dir: str)-> None:
         for language_folder in os.listdir(data_dir):
             language = language_folder
             for username in os.listdir(f'{data_dir}/{language_folder}'):
-
-                self.lang2users[language].add(username)
-                self.user_list.add(username)
-
+                self.lang2usernames[username].append(username)
                 user_examples = []
                 for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
                     with open(os.path.join(data_dir, language_folder, username, chunk), 'r') as f:
@@ -172,72 +174,43 @@ class RedditL2DataProcessor(DataProcessor):
                             InputExample(guid=f'{username}_{chunk}', text_a=text, label=language)
                         )
 
-                    if is_europe:
-                        self.europe_user2examples[username] = user_examples
-                    else:
-                        self.non_europe_user2examples[username] = user_examples
+                self.user2examples[username] = user_examples
 
         user_has_more_than_one_chunk = False
 
-        for username, example_list in self.europe_user2examples.items():
+        # Make sure everything is in order
+        for username, example_list in self.user2examples.items():
             num_examples = len(example_list)
+            self.total_num_examples += num_examples
+
             if num_examples > 1:
                 user_has_more_than_one_chunk = True
+
+            assert not num_examples > 3
 
         if not user_has_more_than_one_chunk:
             logger.warning('All users have only one example/chunk')
              
-        for language, user_list in self.lang2users.items():
+        for language, user_list in self.lang2usernames.items():
             assert len(user_list) == 104, f'{language} has {len(user_list)} users.'
 
+    def _get_examples_for_fold(self, fold_function):
+        examples = []
+        fold_size = int(self.total_num_examples / 10)
+        logger.info(f'Reddit fold size is {fold_size}')
+
+        for usernames in self.lang2usernames.values():
+            usernames_for_lang = fold_function(usernames, self.fold_number, fold_size)
+            for username in usernames_for_lang:
+                for example in self.user2examples[username]:
+                    examples.append(example)
+
     def get_train_examples(self, data_dir: str) -> List[InputExample]:
-        in_domain = constants.REDDIT_IN_DOMAIN
-        self.discover_user_examples(f'{data_dir}/europe_data', is_europe=True)
-
-        num_users = len(self.user_list)
-        logger.info(f'Number of europe users: {num_users}')
-
-        if not in_domain:
-            self.discover_user_examples(f'{data_dir}/non_europe_data', is_europe=False)
-
-        num_users = len(self.user_list)
-        logger.info(f'Number of europe users: {num_users}')
-
-        num_training_users = int(num_users * (1 - constants.REDDIT_L2_TEST_SPLIT))
-        logger.info(f'Number of europe users: {num_training_users}')
-
-        training_examples = []
-        languages = self.get_labels()
-        lang_idx = 0
-
-        for _ in range(num_training_users):
-            # Select users uniformly accross languages
-            username = self.lang2users[languages[lang_idx % len(languages)]].pop()
-            lang_idx += 1
-
-            self.user_list.remove(username)
-            user_examples = self.europe_user2examples[username]
-            logger.info(f'{username} has {len(user_examples)} examples')
-
-            for example in user_examples:
-                training_examples.append(example)
-
-        return training_examples
+        self.discover_examples(data_dir)
+        return self._get_examples_for_fold(self._get_train_fold)
 
     def get_dev_examples(self, data_dir):
-        dev_examples = []
-        # Assumes that all the users reserved for training have been removed from the user list
-        while self.user_list:
-            username = self.user_list.pop()
-            if constants.REDDIT_IN_DOMAIN:
-                user_examples = self.europe_user2examples[username]
-            else:
-                user_examples = self.non_europe_user2examples[username]
-
-            for example in user_examples:
-                dev_examples.append(example)
-
-        return dev_examples
+        return self._get_examples_for_fold(self._get_dev_fold)
 
     def get_labels(self):
         
