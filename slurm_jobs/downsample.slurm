@@ -1,9 +1,9 @@
 #!/bin/sh
 #SBATCH --partition=WORKQ
-#SBATCH --time=5:00:00
+#SBATCH --time=2:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
-#SBATCH --mem=32000
+#SBATCH --mem=16000
 #SBATCH --job-name="downsample-reddit"
 #SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/downsample.out
 #SBATCH --mail-user=stianste@stud.ntnu.no
@@ -24,6 +24,8 @@ echo "Total of $SLURM_NTASKS cores"
 module purge
 module load intel/2018b
 module load Python/3.6.6
+
+rm -rf data/RedditL2/reddit_downsampled
 
 python scripts/simple_downsample.py
 python tests/verify_downsampling.py
