@@ -734,8 +734,8 @@ def main():
         model.eval()
         eval_loss, eval_accuracy = 0, 0
         nb_eval_steps, nb_eval_examples = 0, 0
-        all_inputs = np.array()
-        all_logits = np.array()
+        all_inputs = np.array([])
+        all_outputs = np.array([])
  
         for input_ids, input_mask, segment_ids, label_ids in tqdm(eval_dataloader, desc="Evaluating"):
             input_ids = input_ids.to(device)
@@ -750,8 +750,10 @@ def main():
             logits = logits.detach().cpu().numpy()
             label_ids = label_ids.to('cpu').numpy()
 
+            outputs = np.argmax(logits, axis=1)
             all_inputs = np.append(all_inputs, label_ids)
-            all_logits = np.append(all_inputs, label_ids)
+            all_outputs = np.append(all_outputs, outputs)
+
             tmp_eval_accuracy = accuracy(logits, label_ids)
 
             eval_loss += tmp_eval_loss.mean().item()
@@ -760,9 +762,9 @@ def main():
             nb_eval_examples += input_ids.size(0)
             nb_eval_steps += 1
 
-        f1 = f1_score(all_inputs, all_logits, average='macro')
-        precision = precision_score(all_inputs, all_logits, average='macro')
-        recall = recall_score(all_inputs, all_logits, average='macro')
+        f1 = f1_score(all_inputs, all_outputs, average='macro')
+        precision = precision_score(all_inputs, all_outputs, average='macro')
+        recall = recall_score(all_inputs, all_outputs, average='macro')
         eval_loss = eval_loss / nb_eval_steps
         eval_accuracy = eval_accuracy / nb_eval_examples
         loss = tr_loss/nb_tr_steps if args.do_train else None
