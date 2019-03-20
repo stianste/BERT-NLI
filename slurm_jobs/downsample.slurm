@@ -25,7 +25,7 @@ module purge
 module load intel/2018b
 module load Python/3.6.6
 
-python scripts/downsample.py
+python scripts/simple_downsample.py
 python tests/verify_downsampling.py
 
 echo "Slurm job finnished!"
