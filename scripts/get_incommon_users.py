@@ -19,21 +19,21 @@ def get_users_from_dir(data_dir: str):
 
     return usernames
 
-def get_unique_users():
+def get_incommon_users():
     europe_usernames = get_users_from_dir('./data/RedditL2/text_chunks/europe_data')
     non_europe_usernames = get_users_from_dir('./data/RedditL2/text_chunks/non_europe_data')
 
-    missing_users = set()
+    incommon_users = set()
 
     for username in europe_usernames:
         if username not in non_europe_usernames:
-            missing_users.add(username)
+            incommon_users.add(username)
 
     logger.info(f'Total number of Europe users: {len(europe_usernames)}')
     logger.info(f'Total number of non Europe users: {len(non_europe_usernames)}')
-    logger.info(f'Total number of missing users: {len(missing_users)}')
+    logger.info(f'Total number of missing users: {len(incommon_users)}')
 
-    return missing_users 
+    return incommon_users
 
 if __name__ == "__main__":
-    main()
+    get_incommon_users()
