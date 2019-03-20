@@ -25,9 +25,7 @@ module purge
 module load intel/2018b
 module load Python/3.6.6
 
-cd data/RedditL2/
-echo "Changed directory, now running downsample.py"
-
-python downsample.py
+python scripts/downsample.py
+python tests/verify_downsampling.py
 
 echo "Slurm job finnished!"

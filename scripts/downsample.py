@@ -53,6 +53,7 @@ def get_data_from_dir(data_dir: str,
             user2chunks[username] = random.sample(user_chunks, min(max_chunks_per_user, len(user_chunks)))
 
     for language, lang_usernames in lang2usernames.items():
+        logger.info(f'{language} has {len(lang_usernames)} users remaining')
         lang2usernames[language] = random.sample(lang_usernames, 104)
 
     sampled_users = set()
@@ -70,9 +71,10 @@ def get_data_from_dir(data_dir: str,
     usernames = [key for key in user2chunks.keys()]
     for username in usernames:
         if not username in sampled_users:
-            del user2chunks[username]
-            del username2lang[username]
+            user2chunks.pop(username)
+            username2lang.pop(username)
 
+    assert len(user2chunks.keys()) == 104 * 23, f'user2chunks has {len(user2chunks.keys())} users'
     return user2chunks, username2lang
 
 def write_user_chunks(data_dir: str, user2chunks: dict, username2lang: dict) -> None:
