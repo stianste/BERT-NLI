@@ -9,7 +9,7 @@ logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(messa
                     level = logging.INFO)
 logger = logging.getLogger(__name__)
 
-random.seed(1)
+random.seed(2)
 
 def get_data_from_dir(data_dir: str,
                       label2language: dict,
@@ -33,8 +33,8 @@ def get_data_from_dir(data_dir: str,
         language = label2language[label]
 
         for username in os.listdir(f'{data_dir}/{label_folder}'):
-            if black_list and username in black_list:
-                continue
+            if username in black_list:
+              continue
 
             if user_list and username not in user_list:
                 continue
@@ -46,26 +46,23 @@ def get_data_from_dir(data_dir: str,
                     text = ''.join(f.readlines()).lower()
                     user_chunks.append(text)
 
-            lang2username2chunks[language].append((username, random.sample(user_chunks, min(max_chunks_per_user, len(user_chunks)))))
+            lang2username2chunks[language].append((username, 
+                                  random.sample(user_chunks, min(max_chunks_per_user, len(user_chunks)))))
 
     for language, user2chunks_tuple_list in lang2username2chunks.items():
-        lang2username2chunks[language] = random.sample(user2chunks_tuple_list, 104)
+        max_num_samples = min(len(user2chunks_tuple_list), 104)
+        if max_num_samples < 104:
+            logger.warning(f'{language} has {len(user2chunks_tuple_list)} users')
+        lang2username2chunks[language] = random.sample(user2chunks_tuple_list, max_num_samples)
 
     sampled_users = set()
 
     for language, user2chunks_tuple_list in lang2username2chunks.items():
-        if not len(user2chunks_tuple_list) == 104:
-            logger.warning(
-                f'{language} does not have 104 users, it has {len(user2chunks_tuple)}')
-
-        assert len(user2chunks_tuple_list) == 104
-
         for user2chunks_tuple in user2chunks_tuple_list:
             username = user2chunks_tuple[0]
             sampled_users.add(username)
 
     logger.info(f'Total number of users are: {len(sampled_users)}, should be {104 * 23}')
-    assert len(sampled_users) == 104 * 23 # 104 users for each of the 23 labels
 
     return lang2username2chunks, sampled_users
 
@@ -129,6 +126,7 @@ def main():
 
     europe_lang2user2chunks, sampled_users = get_data_from_dir('./data/RedditL2/text_chunks/europe_data',
                                                            label2language, 3,
+                                                           user_list=None,
                                                            black_list=black_list)
 
     write_user_chunks(europe_folder, europe_lang2user2chunks)
