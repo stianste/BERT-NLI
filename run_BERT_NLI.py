@@ -429,6 +429,9 @@ def warmup_linear(x, warmup=0.002):
 def get_timestamp():
     return datetime.datetime.fromtimestamp(time.time()).strftime('%m-%d_%H:%M')
 
+def get_eval_folder_name(args):
+    return f'seq_{args.max_seq_length}_batch_{args.train_batch_size }_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
+
 def main():
     parser = argparse.ArgumentParser()
 
@@ -517,11 +520,15 @@ def main():
                         type=str, default=None,
                         help="Path to the vocab file to use for the tokenizer.")
 
+    parser.add_argument('--cross_validation_fold',
+                        type=int, default=None,
+                        help="If cross validating, this tells the model what fold to use.")
+
     args = parser.parse_args()
 
     processors = {
         "toefl11": TOEFL11Processor,
-        "redditl2": RedditL2DataProcessor,
+        "redditl2": RedditInDomainDataProcessor,
     }
 
     num_labels_task = {
@@ -561,7 +568,15 @@ def main():
     if task_name not in processors:
         raise ValueError("Task not found: %s" % (task_name))
 
-    processor = processors[task_name]()
+    if task_name.lower().contains('reddit') and not args.cross_validation_fold:
+        raise ValueError('The reddit data set cannot be used without cross validation')
+
+    if args.cross_validation_fold:
+        logger.info('Using cross-validation')
+        processor = processors[task_name](args.cross_validation_fold)
+    else:
+        processor = processors[task_name]()
+
     num_labels = num_labels_task[task_name]
     label_list = processor.get_labels()
 
@@ -668,18 +683,21 @@ def main():
     os.mkdir(full_path)
 
     if args.do_train:
-        # Save a trained model and the associated configuration
-        model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model it-self
-        output_model_file = os.path.join(full_path, WEIGHTS_NAME)
-        torch.save(model_to_save.state_dict(), output_model_file)
-        output_config_file = os.path.join(full_path, CONFIG_NAME)
-        with open(output_config_file, 'w') as f:
-            f.write(model_to_save.config.to_json_string())
+        if args.cross_validation_fold and args.cross_validation_fold != 10:
+            pass
+        else:
+            # Save a trained model and the associated configuration
+            model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model it-self
+            output_model_file = os.path.join(full_path, WEIGHTS_NAME)
+            torch.save(model_to_save.state_dict(), output_model_file)
+            output_config_file = os.path.join(full_path, CONFIG_NAME)
+            with open(output_config_file, 'w') as f:
+                f.write(model_to_save.config.to_json_string())
 
-        # Load a trained model and config that you have fine-tuned
-        config = BertConfig(output_config_file)
-        model = BertForSequenceClassification(config, num_labels=num_labels)
-        model.load_state_dict(torch.load(output_model_file))
+            # Load a trained model and config that you have fine-tuned
+            config = BertConfig(output_config_file)
+            model = BertForSequenceClassification(config, num_labels=num_labels)
+            model.load_state_dict(torch.load(output_model_file))
     else:
         model = BertForSequenceClassification.from_pretrained(args.bert_model, num_labels=num_labels)
 
@@ -749,9 +767,17 @@ def main():
                   'global_step': global_step,
                   'loss': loss}
 
-        timestamp = get_timestamp()
-        eval_filename = f'{timestamp}_acc{eval_accuracy:.3f}_seq_{args.max_seq_length}_batch_{args.train_batch_size }_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
-        output_eval_file = os.path.join(args.output_dir, f'{eval_filename}.txt')
+
+        if args.cross_validation_fold:
+            eval_foldername = get_eval_folder_name(args)
+            folder_path = os.path.join(args.output_dir, eval_foldername)
+            os.makedirs(eval_foldername, exist_ok=True)
+            output_eval_file = folder_path + f'fold_{args.cross_validation_fold}.txt'
+
+        else:
+            timestamp = get_timestamp()
+            eval_filename = f'{timestamp}_acc{eval_accuracy:.3f}_seq_{args.max_seq_length}_batch_{args.train_batch_size }_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
+            output_eval_file = os.path.join(args.output_dir, f'{eval_filename}.txt')
 
         with open(output_eval_file, "w") as writer:
             logger.info("***** Eval results *****")
