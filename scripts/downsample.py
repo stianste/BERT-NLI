@@ -135,20 +135,20 @@ def main():
         "Turkey" : "Turkish",
     }
 
-    europe_folder = 'reddit_downsampled/europe_data'
-    non_europe_folder = 'reddit_downsampled/non_europe_data'
+    europe_folder = './data/RedditL2/reddit_downsampled/europe_data'
+    non_europe_folder = './data/RedditL2/reddit_downsampled/non_europe_data'
     os.makedirs(europe_folder, exist_ok=True)
     os.makedirs(non_europe_folder, exist_ok=True)
 
     black_list = get_incommon_users()
 
-    europe_user2chunks, username2lang = get_data_from_dir('text_chunks/europe_data',
+    europe_user2chunks, username2lang = get_data_from_dir('./data/RedditL2/text_chunks/europe_data',
                                                            label2language, 3,
                                                            black_list=black_list)
 
     write_user_chunks(europe_folder, europe_user2chunks, username2lang)
 
-    non_europe_user2chunks, _ = get_data_from_dir('text_chunks/non_europe_data',
+    non_europe_user2chunks, _ = get_data_from_dir('./data/RedditL2/text_chunks/non_europe_data',
                                                    label2language, 17, 
                                                    user_list=europe_user2chunks.keys(),
                                                    black_list=black_list)
