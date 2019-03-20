@@ -14,8 +14,8 @@ random.seed(1)
 def get_data_from_dir(data_dir: str,
                       label2language: dict,
                       max_chunks_per_user: int,
-                      user_list: set=None, 
-                      black_list: set=None):
+                      user_list: set, 
+                      black_list: set):
 
     # Each class must have same number of users.
     # Find number of users tagged with each label in the data,
@@ -33,7 +33,7 @@ def get_data_from_dir(data_dir: str,
         language = label2language[label]
 
         for username in os.listdir(f'{data_dir}/{label_folder}'):
-            if username in black_list:
+            if black_list and username in black_list:
                 continue
 
             if user_list and username not in user_list:
@@ -46,22 +46,23 @@ def get_data_from_dir(data_dir: str,
                     text = ''.join(f.readlines()).lower()
                     user_chunks.append(text)
 
-            lang2username2chunks[language].append(username, random.sample(user_chunks, min(max_chunks_per_user, len(user_chunks))))
+            lang2username2chunks[language].append((username, random.sample(user_chunks, min(max_chunks_per_user, len(user_chunks)))))
 
-    for language, user2chunks_tuple in lang2username2chunks.items():
-        lang2username2chunks[language] = random.sample(user2chunks_tuple, 104)
+    for language, user2chunks_tuple_list in lang2username2chunks.items():
+        lang2username2chunks[language] = random.sample(user2chunks_tuple_list, 104)
 
     sampled_users = set()
 
-    for language, user2chunks_tuple in lang2username2chunks.items():
-        if not len(user2chunks_tuple) == 104:
+    for language, user2chunks_tuple_list in lang2username2chunks.items():
+        if not len(user2chunks_tuple_list) == 104:
             logger.warning(
                 f'{language} does not have 104 users, it has {len(user2chunks_tuple)}')
 
-        assert len(user2chunks_tuple) == 104
+        assert len(user2chunks_tuple_list) == 104
 
-        username = user2chunks_tuple[0]
-        sampled_users.add(username)
+        for user2chunks_tuple in user2chunks_tuple_list:
+            username = user2chunks_tuple[0]
+            sampled_users.add(username)
 
     logger.info(f'Total number of users are: {len(sampled_users)}, should be {104 * 23}')
     assert len(sampled_users) == 104 * 23 # 104 users for each of the 23 labels
@@ -69,21 +70,21 @@ def get_data_from_dir(data_dir: str,
     return lang2username2chunks, sampled_users
 
 def write_user_chunks(data_dir: str, lang2username2chunks) -> None:
-    for language, user2chunks_tuple in lang2username2chunks.items():
+    for language, user2chunks_tuple_list in lang2username2chunks.items():
         language_folder = f'{data_dir}/{language}'
 
         if not os.path.exists(language_folder):
             os.makedirs(language_folder)
 
-        username, user_chunks = user2chunks_tuple
+        for user2chunks_tuple in user2chunks_tuple_list:
+            username, user_chunks = user2chunks_tuple
+            user_folder = f'{language_folder}/{username}'
+            if not os.path.exists(user_folder):
+                os.makedirs(user_folder)
 
-        user_folder = f'{language_folder}/{username}'
-        if not os.path.exists(user_folder):
-            os.makedirs(user_folder)
-
-        for chunk_num, chunk in enumerate(user_chunks):
-            with open(f'{user_folder}/chunk{chunk_num + 1}', 'w') as f:
-                f.write(chunk)
+            for chunk_num, chunk in enumerate(user_chunks):
+                with open(f'{user_folder}/chunk{chunk_num + 1}', 'w') as f:
+                    f.write(chunk)
 
 def main():
     logger.info('Running!')
