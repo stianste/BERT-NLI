@@ -28,6 +28,7 @@ module load Python/3.6.6
 rm -rf data/RedditL2/reddit_downsampled
 
 python scripts/simple_downsample.py
-python tests/verify_downsampling.py
 
-echo "Slurm job finnished!"
+if [ $? -eq 0 ]; then
+    python tests/verify_downsampling.py
+    echo "Downsampling finished."

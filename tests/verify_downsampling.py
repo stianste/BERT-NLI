@@ -19,7 +19,6 @@ def verify_dir(data_dir, is_europe=False):
 
     return total_num_users, total_num_chunks
 
-
 def main():
     num_europe_users, europe_total_num_chunks = verify_dir(
         './data/RedditL2/reddit_downsampled/europe_data', is_europe=True)
