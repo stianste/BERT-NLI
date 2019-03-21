@@ -28,5 +28,7 @@ def main():
     print('Num europe users:', num_europe_users, '. Num chunks:', europe_total_num_chunks)
     print('Num non europe users:', num_non_europe_users, '. Num chunks:', non_europe_total_num_chunks)
 
+    print('Verification of downsampling finished!')
+
 if __name__ == "__main__":
     main()
