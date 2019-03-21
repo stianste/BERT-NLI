@@ -2,19 +2,20 @@ import os
 import random
 import logging
 from collections import Counter, defaultdict
-from get_common_users import get_common_users
+from get_incommon_users import get_incommon_users
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
                     level = logging.INFO)
 logger = logging.getLogger(__name__)
 
-random.seed(3)
+random.seed(2)
 
 def get_data_from_dir(data_dir: str,
                       label2language: dict,
                       max_chunks_per_user: int,
-                      user_list: set):
+                      user_list: set=None,
+                      black_list: set=None):
 
     # Each class must have same number of users.
     # Find number of users tagged with each label in the data,
@@ -32,8 +33,10 @@ def get_data_from_dir(data_dir: str,
         language = label2language[label]
 
         for username in os.listdir(f'{data_dir}/{label_folder}'):
-            # Only use users which are common for both in and out of domain
-            if username not in user_list:
+            if black_list and username in black_list:
+                continue
+
+            if user_list and username not in user_list:
                 continue
 
             user_chunks = []
@@ -119,13 +122,12 @@ def main():
     os.makedirs(europe_folder, exist_ok=True)
     os.makedirs(non_europe_folder, exist_ok=True)
 
-    common_users = get_common_users()
+    black_list = get_incommon_users()
 
     europe_lang2user2chunks, sampled_users = get_data_from_dir(
         './data/RedditL2/text_chunks/europe_data',
         label2language, 
-        3,
-        common_users
+        3
     )
 
     write_user_chunks(europe_folder, europe_lang2user2chunks)
@@ -134,7 +136,8 @@ def main():
         './data/RedditL2/text_chunks/non_europe_data',
         label2language, 
         17,
-        sampled_users
+        black_list=black_list,
+        user_list=sampled_users
     )
 
     write_user_chunks(non_europe_folder, non_europe_lang2user2chunks)

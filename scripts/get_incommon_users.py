@@ -22,17 +22,17 @@ def get_users_from_dir(data_dir: str):
 
     return usernames, lang2usernames
 
-def get_common_users(compare_languages=False):
+def get_incommon_users(compare_languages=False):
     europe_usernames, europe_lang2usernames = get_users_from_dir(
         './data/RedditL2/text_chunks/europe_data')
     non_europe_usernames, non_europe_lang2usernames = get_users_from_dir(
         './data/RedditL2/text_chunks/non_europe_data')
 
-    common_users = set()
+    incommon_users = set()
 
     for username in europe_usernames:
-        if username in non_europe_usernames:
-            common_users.add(username)
+        if not username in non_europe_usernames:
+            incommon_users.add(username)
 
     logger.info(f'Total number of Europe users: {len(europe_usernames)}')
     logger.info(f'Total number of non Europe users: {len(non_europe_usernames)}')
@@ -44,8 +44,7 @@ def get_common_users(compare_languages=False):
             common = userset.intersection(non_europe_userset)
             logger.info(f'{language} has {len(common)} in and out of domain.')
 
-    logger.info(f'Number of common users: {len(common_users)}')
-    return common_users
+    return incommon_users
 
 if __name__ == "__main__":
-    get_common_users()
+    get_incommon_users()
