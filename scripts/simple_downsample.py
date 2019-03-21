@@ -14,8 +14,8 @@ random.seed(2)
 def get_data_from_dir(data_dir: str,
                       label2language: dict,
                       max_chunks_per_user: int,
-                      user_list: set, 
-                      black_list: set):
+                      user_list: set=None, 
+                      black_list: set=None):
 
     # Each class must have same number of users.
     # Find number of users tagged with each label in the data,
@@ -33,7 +33,7 @@ def get_data_from_dir(data_dir: str,
         language = label2language[label]
 
         for username in os.listdir(f'{data_dir}/{label_folder}'):
-            if username in black_list:
+            if black_list and username in black_list:
               continue
 
             if user_list and username not in user_list:
@@ -125,9 +125,7 @@ def main():
     black_list = get_incommon_users()
 
     europe_lang2user2chunks, sampled_users = get_data_from_dir('./data/RedditL2/text_chunks/europe_data',
-                                                           label2language, 3,
-                                                           user_list=None,
-                                                           black_list=black_list)
+                                                           label2language, 3)
 
     write_user_chunks(europe_folder, europe_lang2user2chunks)
 
@@ -136,7 +134,7 @@ def main():
                                                    black_list=black_list,
                                                    user_list=sampled_users)
 
-    write_user_chunks(europe_folder, non_europe_lang2user2chunks)
+    write_user_chunks(non_europe_folder, non_europe_lang2user2chunks)
 
 if __name__ == "__main__":
     main()
