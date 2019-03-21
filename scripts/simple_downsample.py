@@ -2,20 +2,19 @@ import os
 import random
 import logging
 from collections import Counter, defaultdict
-from get_incommon_users import get_incommon_users
+from get_common_users import get_common_users
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
                     level = logging.INFO)
 logger = logging.getLogger(__name__)
 
-random.seed(2)
+random.seed(3)
 
 def get_data_from_dir(data_dir: str,
                       label2language: dict,
                       max_chunks_per_user: int,
-                      user_list: set=None, 
-                      black_list: set=None):
+                      user_list: set):
 
     # Each class must have same number of users.
     # Find number of users tagged with each label in the data,
@@ -33,10 +32,8 @@ def get_data_from_dir(data_dir: str,
         language = label2language[label]
 
         for username in os.listdir(f'{data_dir}/{label_folder}'):
-            if black_list and username in black_list:
-              continue
-
-            if user_list and username not in user_list:
+            # Only use users which are common for both in and out of domain
+            if username not in user_list:
                 continue
 
             user_chunks = []
@@ -122,17 +119,23 @@ def main():
     os.makedirs(europe_folder, exist_ok=True)
     os.makedirs(non_europe_folder, exist_ok=True)
 
-    black_list = get_incommon_users()
+    common_users = get_common_users()
 
-    europe_lang2user2chunks, sampled_users = get_data_from_dir('./data/RedditL2/text_chunks/europe_data',
-                                                           label2language, 3)
+    europe_lang2user2chunks, sampled_users = get_data_from_dir(
+        './data/RedditL2/text_chunks/europe_data',
+        label2language, 
+        3,
+        common_users
+    )
 
     write_user_chunks(europe_folder, europe_lang2user2chunks)
 
-    non_europe_lang2user2chunks, _ = get_data_from_dir('./data/RedditL2/text_chunks/non_europe_data',
-                                                   label2language, 17, 
-                                                   black_list=black_list,
-                                                   user_list=sampled_users)
+    non_europe_lang2user2chunks, _ = get_data_from_dir(
+        './data/RedditL2/text_chunks/non_europe_data',
+        label2language, 
+        17,
+        sampled_users
+    )
 
     write_user_chunks(non_europe_folder, non_europe_lang2user2chunks)
 
