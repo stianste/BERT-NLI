@@ -32,3 +32,5 @@ python scripts/simple_downsample.py
 if [ $? -eq 0 ]; then
     python tests/verify_downsampling.py
     echo "Downsampling finished."
+fi
+
