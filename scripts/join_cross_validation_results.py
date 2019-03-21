@@ -1,9 +1,12 @@
 import os
 
+import sys
+sys.path.append('./..')
+
 from argparse import ArgumentParser
 from collections import defaultdict
 
-from .run_BERT_NLI import get_eval_folder_name
+from run_BERT_NLI import get_eval_folder_name
 
 parser = ArgumentParser()
 
@@ -49,7 +52,13 @@ for fold_result_file in os.listdir(full_path):
             results[key] += 1
 
 # Average results over k-folds and save to file
+for key in results.keys():
+    value = results[key] / args.cross_k
+
+# Get overall f1 score.
+precision, recall = results['precision'], results['recall']
+results['f1'] = 2 * (precision * recall) / (precision + recall)
+
 with open(os.path.join(full_path, 'final.txt'), 'w') as f:
     for key in sorted(results.keys()):
-        value = results[key] / args.cross_k
-        f.write(f'{key} = {value}\n')
+      f.write(f'{key} = {value}\n')
