@@ -568,7 +568,7 @@ def main():
     if task_name not in processors:
         raise ValueError("Task not found: %s" % (task_name))
 
-    if task_name.lower().contains('reddit') and not args.cross_validation_fold:
+    if task_name.lower() == 'redditl2' and not args.cross_validation_fold:
         raise ValueError('The reddit data set cannot be used without cross validation')
 
     if args.cross_validation_fold:
