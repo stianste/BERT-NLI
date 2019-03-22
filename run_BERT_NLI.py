@@ -441,6 +441,9 @@ class LargeReddit2TOEFL11Processor(DataProcessor):
                             InputExample(guid=f'{username}_{chunk}', text_a=text, label=language)
                         )
 
+        toefl_data_dir = './data/NLI-shared-task-2017/' + constants.TOEFL11_TRAINING_DATA_PATH
+        examples += self.toefl_processor.get(toefl_data_dir)
+
         return examples
 
     def get_dev_examples(self, _):
@@ -665,12 +668,14 @@ def main():
         "toefl11": TOEFL11Processor,
         "redditl2": RedditInDomainDataProcessor,
         "out-of-domain-redditl2": RedditOutOfDomainDataProcessor,
+        "reddit2toefl": LargeReddit2TOEFL11Processor,
     }
 
     num_labels_task = {
         "toefl11": 11,
         "redditl2": 23,
-        "out-of-domain-redditl2": 23
+        "out-of-domain-redditl2": 23,
+        "reddit2toefl": 5,
     }
 
     if args.local_rank == -1 or args.no_cuda:
