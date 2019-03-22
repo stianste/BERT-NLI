@@ -38,10 +38,10 @@ python ./run_BERT_NLI.py \
   --do_train \
   --do_eval \
   --data_dir $DATA_DIR \
-  --bert_model ./toefl11_models/seq_128_lower_False_epochs_30.0_lr_3e-05/ \
+  --bert_model ./toefl11_models/seq_128_lower_False_epochs_50.0_lr_3e-05/ \
   --max_seq_length 128 \
   --train_batch_size 16 \
   --learning_rate 2e-5 \
-  --num_train_epochs 50 \
-  --output_dir ./toefl11_results \
+  --num_train_epochs 5 \
+  --output_dir ./pre_trained_toefl11_results \
   --vocab_file ./data/vocabs/bert-large-uncased-vocab_filled.txt \

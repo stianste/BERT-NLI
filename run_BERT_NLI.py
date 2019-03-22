@@ -164,11 +164,13 @@ class RedditInDomainDataProcessor(DataProcessor):
     def discover_examples(self, data_dir: str)-> None:
         for language_folder in os.listdir(data_dir):
             language = language_folder
+            logger.info(f'Language: {language}')
             for username in os.listdir(f'{data_dir}/{language_folder}'):
-                self.lang2usernames[username].append(username)
+                self.lang2usernames[language].append(username)
                 user_examples = []
                 for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
-                    with open(os.path.join(data_dir, language_folder, username, chunk), 'r') as f:
+                    full_path = f'{data_dir}/{language_folder}/{username}/{chunk}' 
+                    with open(full_path, 'r') as f:
                         text = ''.join(f.readlines()).lower()
                         user_examples.append(
                             InputExample(guid=f'{username}_{chunk}', text_a=text, label=language)
@@ -204,6 +206,8 @@ class RedditInDomainDataProcessor(DataProcessor):
             for username in usernames_for_lang:
                 for example in self.user2examples[username]:
                     examples.append(example)
+
+        return examples
 
     def get_train_examples(self, data_dir: str) -> List[InputExample]:
         self.discover_examples(data_dir)
