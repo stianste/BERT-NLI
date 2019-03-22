@@ -165,7 +165,6 @@ class RedditInDomainDataProcessor(DataProcessor):
         self.fold_number = fold_number - 1
         self.user2examples = {}
         self.lang2usernames = defaultdict(list)
-        self.total_num_examples = 0
 
     def discover_examples(self, data_dir: str)-> None:
         for language_folder in os.listdir(data_dir):
@@ -188,7 +187,6 @@ class RedditInDomainDataProcessor(DataProcessor):
         # Make sure everything is in order
         for username, example_list in self.user2examples.items():
             num_examples = len(example_list)
-            self.total_num_examples += num_examples
 
             if num_examples > 1:
                 user_has_more_than_one_chunk = True
@@ -205,7 +203,6 @@ class RedditInDomainDataProcessor(DataProcessor):
         examples = []
         fold_size = int(104 / 10)
         logger.info(f'Reddit fold size is {fold_size}')
-        logger.info(f'Total number of examples is {self.total_num_examples}')
 
         for usernames in self.lang2usernames.values():
             logger.info(f'Number of usernames for language: {len(usernames)}')
@@ -300,6 +297,78 @@ class RedditInDomainDataProcessor(DataProcessor):
         language_list = list(set(label2language.values()))
         assert len(language_list) == 23
         return language_list 
+
+class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
+    """Processor for the RedditL2 data set out of domain"""
+
+    def __init__(self, _):
+        self.europe_user2examples = {}
+        self.non_europe_user2examples = {}
+        self.europe_usernames = set()
+        self.non_europe_usernames = set()
+        self.lang2usernames = defaultdict(list)
+
+    def verify_users(self, data_dir: str) -> set:
+        europe_users = set()
+        for language_folder in os.listdir(data_dir + '/europe_data'):
+            for username in os.listdir(f'{data_dir}/{language_folder}'):
+                europe_users.add(username)
+
+        non_europe_users = set()
+        for language_folder in os.listdir(data_dir + '/non_europe_data'):
+            for username in os.listdir(f'{data_dir}/{language_folder}'):
+                non_europe_users.add(username)
+
+        if len(europe_users.difference(non_europe_users)) > 0:
+            logger.warning('There are differences in the users in and out of domain.')
+
+    def discover_examples(self, data_dir: str, is_europe=True)-> None:
+        for language_folder in os.listdir(data_dir):
+            language = language_folder
+            for username in os.listdir(f'{data_dir}/{language_folder}'):
+                self.lang2usernames[language].append(username)
+                user_examples = []
+                for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
+                    full_path = f'{data_dir}/{language_folder}/{username}/{chunk}'
+                    with open(full_path, 'r') as f:
+                        text = ''.join(f.readlines()).lower()
+                        user_examples.append(
+                            InputExample(guid=f'{username}_{chunk}', text_a=text, label=language)
+                        )
+
+                if is_europe:
+                    self.europe_user2examples[username] = user_examples
+                else:
+                    self.non_europe_user2examples[username] = user_examples
+
+    def get_train_examples(self, data_dir: str) -> List[InputExample]:
+        logger.info('Discovering examples')
+        self.discover_examples(data_dir + '/europe_data')
+        self.discover_examples(data_dir + '/non_europe_data', is_europe=False)
+        self.verify_users(data_dir)
+
+        for usernames in self.lang2usernames.values():
+            num_europe_users = int(len(usernames) * 0.9)
+            europe_users = random.sample(list(usernames), num_europe_users)
+            self.europe_usernames = self.europe_usernames.union(europe_users)
+            self.non_europe_usernames = self.non_europe_usernames.union(usernames.difference(europe_users))
+
+        examples = [None for x in range(len(self.europe_usernames))]
+        for i, username in enumerate(self.europe_usernames):
+            for example in self.europe_user2examples[username]:
+                examples[i] = example
+
+        return examples
+
+    def get_dev_examples(self, data_dir):
+        # Assumes get_training_examples have already been run
+        examples = [None for x in range(len(self.non_europe_usernames))]
+        for i, username in enumerate(self.non_europe_usernames):
+            for example in self.non_europe_user2examples[username]:
+                examples[i] = example
+
+        return examples
+
 
 class Reddit2TOEFL11Processor(DataProcessor):
     """
