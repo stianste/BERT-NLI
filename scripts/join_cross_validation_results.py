@@ -49,7 +49,7 @@ for fold_result_file in os.listdir(full_path):
     with open(os.path.join(full_path, fold_result_file), 'r') as f:
         for line in f.readlines():
             key, _, value = line.split()
-            results[key] += 1
+            results[key] += value
 
 # Average results over k-folds and save to file
 for key in results.keys():

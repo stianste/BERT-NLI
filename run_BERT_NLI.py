@@ -85,9 +85,15 @@ class DataProcessor(object):
             return lines
 
     def _get_dev_fold(self, examples, fold_number, fold_size):
+        logger.info(f'Inside _get_dev_fold')
+        logger.info(f'Num examples: {len(examples)}, foldnumber: {fold_number}, fold_size: {fold_size}')
+        logger.info(f'Slicing from [{fold_number * fold_size} : {(fold_number + 1) * fold_size}]')
         return examples[fold_number * fold_size : (fold_number + 1) * fold_size]
 
     def _get_train_fold(self, examples, fold_number, fold_size):
+        logger.info(f'Inside _get_train_fold')
+        logger.info(f'Num examples: {len(examples)}, foldnumber: {fold_number}, fold_size: {fold_size}')
+        logger.info(f'Slicing from [0:{fold_number * fold_size}] + [{(fold_number + 1) * fold_size} : ]')
         return examples[0:fold_number * fold_size] + examples[(fold_number + 1) * fold_size : ]
 
 
@@ -156,7 +162,7 @@ class RedditInDomainDataProcessor(DataProcessor):
     """Processor for the RedditL2 data set"""
 
     def __init__(self, fold_number):
-        self.fold_number = fold_number
+        self.fold_number = fold_number - 1
         self.user2examples = {}
         self.lang2usernames = defaultdict(list)
         self.total_num_examples = 0
@@ -164,7 +170,6 @@ class RedditInDomainDataProcessor(DataProcessor):
     def discover_examples(self, data_dir: str)-> None:
         for language_folder in os.listdir(data_dir):
             language = language_folder
-            logger.info(f'Language: {language}')
             for username in os.listdir(f'{data_dir}/{language_folder}'):
                 self.lang2usernames[language].append(username)
                 user_examples = []
@@ -198,7 +203,7 @@ class RedditInDomainDataProcessor(DataProcessor):
 
     def _get_examples_for_fold(self, fold_function):
         examples = []
-        fold_size = int(self.total_num_examples / 10)
+        fold_size = int(104 / 10)
         logger.info(f'Reddit fold size is {fold_size}')
         logger.info(f'Total number of examples is {self.total_num_examples}')
 
@@ -782,8 +787,8 @@ def main():
         if args.cross_validation_fold:
             eval_foldername = get_eval_folder_name(args)
             folder_path = os.path.join(args.output_dir, eval_foldername)
-            os.makedirs(eval_foldername, exist_ok=True)
-            output_eval_file = folder_path + f'fold_{args.cross_validation_fold}.txt'
+            os.makedirs(folder_path, exist_ok=True)
+            output_eval_file = folder_path + f'/fold_{args.cross_validation_fold}.txt'
 
         else:
             timestamp = get_timestamp()

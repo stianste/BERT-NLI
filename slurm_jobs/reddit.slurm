@@ -1,7 +1,7 @@
 #!/bin/sh
 #SBATCH --partition=EPICALL
 #SBATCH --gres=gpu:2
-#SBATCH --time=5:00:00
+#SBATCH --time=25:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
 #SBATCH --mem=64000
@@ -34,13 +34,14 @@ pip install -r requirements.txt
 export DATA_DIR=./data/RedditL2/reddit_downsampled/europe_data
 
 export MAX_SEQ_LENGTH=128
-export TRAIN_BATCH_SIZE=64
+export TRAIN_BATCH_SIZE=16
 export LEARNING_RATE=2e-5
-export NUM_TRAIN_EPOCHS=1
+export NUM_TRAIN_EPOCHS=5
 export K=10
 export OUTPUT_DIR=./reddit_results
 
-for i in {0..$K}
+#!/bin/bash
+for i in $(seq 1 $K)
 do
   echo 'Cross validation fold number:'
   echo $i
@@ -57,7 +58,7 @@ do
     --learning_rate $LEARNING_RATE \
     --num_train_epochs $NUM_TRAIN_EPOCHS \
     --output_dir $OUTPUT_DIR \
-    --cross_validation_fold $K
+    --cross_validation_fold $i
 done
 
 python -m scripts.join_cross_validation_results \
