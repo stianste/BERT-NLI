@@ -721,6 +721,19 @@ def main():
 
     if args.do_eval and (args.local_rank == -1 or torch.distributed.get_rank() == 0):
         eval_examples = processor.get_dev_examples(args.data_dir)
+
+        # Keep track of all train ids, to make sure non are used for evaluation
+        train_ids = set([input_example.guid for input_example in train_examples])
+
+        eval_ids = [input_example.guid for input_example in eval_examples]
+        for eval_id in eval_ids:
+            if eval_id in train_ids:
+                raise ValueError(f'{eval_id} is present both in test and training set.')
+
+        # Clean memory
+        del eval_ids
+        del train_ids
+
         eval_features = convert_examples_to_features(
             eval_examples, label_list, args.max_seq_length, tokenizer)
 
