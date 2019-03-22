@@ -200,20 +200,27 @@ class RedditInDomainDataProcessor(DataProcessor):
         examples = []
         fold_size = int(self.total_num_examples / 10)
         logger.info(f'Reddit fold size is {fold_size}')
+        logger.info(f'Total number of examples is {self.total_num_examples}')
 
         for usernames in self.lang2usernames.values():
+            logger.info(f'Number of usernames for language: {len(usernames)}')
             usernames_for_lang = fold_function(usernames, self.fold_number, fold_size)
+            logger.info(f'Usernames after fold function: {len(usernames_for_lang)}')
             for username in usernames_for_lang:
                 for example in self.user2examples[username]:
                     examples.append(example)
 
+        logger.info(f'Found {len(examples)} examples')
         return examples
 
     def get_train_examples(self, data_dir: str) -> List[InputExample]:
+        logger.info('Discovering examples')
         self.discover_examples(data_dir)
+        logger.info('Getting training fold')
         return self._get_examples_for_fold(self._get_train_fold)
 
     def get_dev_examples(self, data_dir):
+        logger.info('Getting dev fold')
         return self._get_examples_for_fold(self._get_dev_fold)
 
     def get_labels(self):

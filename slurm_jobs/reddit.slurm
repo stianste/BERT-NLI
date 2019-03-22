@@ -34,7 +34,7 @@ pip install -r requirements.txt
 export DATA_DIR=./data/RedditL2/reddit_downsampled/europe_data
 
 export MAX_SEQ_LENGTH=128
-export TRAIN_BATCH_SIZE=16
+export TRAIN_BATCH_SIZE=64
 export LEARNING_RATE=2e-5
 export NUM_TRAIN_EPOCHS=1
 export K=10
