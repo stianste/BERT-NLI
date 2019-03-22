@@ -614,11 +614,13 @@ def main():
     processors = {
         "toefl11": TOEFL11Processor,
         "redditl2": RedditInDomainDataProcessor,
+        "out-of-domain-redditl2": RedditOutOfDomainDataProcessor,
     }
 
     num_labels_task = {
         "toefl11": 11,
         "redditl2": 23,
+        "out-of-domain-redditl2": 23
     }
 
     if args.local_rank == -1 or args.no_cuda:
@@ -722,6 +724,9 @@ def main():
         logger.info("  Num examples = %d", len(train_examples))
         logger.info("  Batch size = %d", args.train_batch_size)
         logger.info("  Num steps = %d", num_train_optimization_steps)
+        if args.cross_validation_fold:
+            logger.info(f'Cross validation fold: {args.cross_validation_fold}')
+
         all_input_ids = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in train_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in train_features], dtype=torch.long)

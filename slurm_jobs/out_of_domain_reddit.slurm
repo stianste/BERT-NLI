@@ -44,7 +44,7 @@ export OUTPUT_DIR=./reddit_results/out_of_domain
 for i in $(seq 1 $K)
 do
   python ./run_BERT_NLI.py \
-    --task_name redditl2 \
+    --task_name out-of-domain-redditl2 \
     --do_train \
     --do_eval \
     --do_lower_case \
