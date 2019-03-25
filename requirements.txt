@@ -6,3 +6,5 @@ tqdm
 nltk
 sentencepiece
 scikit-learn
+matplotlib
+

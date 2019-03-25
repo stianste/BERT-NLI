@@ -6,12 +6,14 @@ import random
 import constants
 import datetime
 import time
+import numpy as np
+import torch
+import matplotlib.pyplot as plt
+
 from tqdm import tqdm, trange
 from typing import List
 from collections import defaultdict
 
-import numpy as np
-import torch
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
 
@@ -21,6 +23,8 @@ from pytorch_pretrained_bert.optimization import BertAdam
 from pytorch_pretrained_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 
 from sklearn.metrics import f1_score, precision_score, recall_score
+
+from plot_confusion_matrix import plot_confusion_matrix
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
@@ -947,6 +951,12 @@ def main():
         else:
             timestamp = get_timestamp()
             eval_filename = f'{timestamp}_acc{eval_accuracy:.3f}_seq_{args.max_seq_length}_batch_{args.train_batch_size }_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
+
+            plot_confusion_matrix(all_inputs, all_outputs, classes=label_list, normalize=True,
+                                title='Normalized confusion matrix')
+            np.set_printoptions(precision=2)
+            plt.savefig(f'./out/confusion_matrices/{args.bert_model}_{eval_filename}.png')
+
             output_eval_file = os.path.join(args.output_dir, f'{eval_filename}.txt')
 
         with open(output_eval_file, "w") as writer:
