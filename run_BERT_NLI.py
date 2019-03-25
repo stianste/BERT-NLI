@@ -100,7 +100,7 @@ class DataProcessor(object):
 class TOEFL11Processor(DataProcessor):
     """Processor for the TOEFL11 data set."""
 
-    def __init__(self, use_reddit_labels: bool=False, label_white_list: set=None):
+    def __init__(self, use_reddit_labels: bool=False):
         self.id2label = {}
         self.use_reddit_labels = use_reddit_labels
         self.label_white_list = label_white_list
@@ -119,7 +119,10 @@ class TOEFL11Processor(DataProcessor):
                 "TUR" : "Turkish",
             }
 
-    def get_train_examples(self, data_dir: str, label_white_list: set=None) -> List[InputExample]:
+    def set_label_white_list(self, label_white_list: set):
+        self.label_white_list = label_white_list
+
+    def get_train_examples(self, data_dir: str) -> List[InputExample]:
         full_path = data_dir + constants.TOEFL11_TRAINING_DATA_PATH
         logger.info(f"Gathering training data from{full_path}")
         self._create_labels(data_dir)
@@ -404,10 +407,10 @@ class LargeReddit2TOEFL11Processor(DataProcessor):
     A large data processor which uses all the data available and tests on the toefl dev set.
     """
     def __init__(self):
-        self.get_labels()
-        self.toefl_processor = TOEFL11Processor(use_reddit_labels=True,
-                                                label_white_list=self.common_labels)
+        self.toefl_processor = TOEFL11Processor(use_reddit_labels=True)
         self.reddit_processor = RedditInDomainDataProcessor(0)
+        self.get_labels()
+        self.toefl_processor.set_label_white_list(self.common_labels)
 
     def get_train_examples(self, data_dir):
         examples = []
@@ -442,7 +445,7 @@ class LargeReddit2TOEFL11Processor(DataProcessor):
                         )
 
         toefl_data_dir = './data/NLI-shared-task-2017/' + constants.TOEFL11_TRAINING_DATA_PATH
-        examples += self.toefl_processor.get(toefl_data_dir)
+        examples += self.toefl_processor.get_train_examples(toefl_data_dir)
 
         return examples
 
