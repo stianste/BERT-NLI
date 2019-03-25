@@ -466,8 +466,10 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
     label_map = {label : i for i, label in enumerate(label_list)}
 
     features = []
+    num_unkown = 0
     for (ex_index, example) in enumerate(examples):
         tokens_a = tokenizer.tokenize(example.text_a)
+        num_unkown += tokens_a.count('[UNK]')
 
         tokens_b = None
         if example.text_b:
@@ -539,7 +541,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
                               input_mask=input_mask,
                               segment_ids=segment_ids,
                               label_id=label_id))
-    return features
+    return features, num_unkown
 
 
 def _truncate_seq_pair(tokens_a, tokens_b, max_length):
@@ -775,9 +777,13 @@ def main():
     global_step = 0
     nb_tr_steps = 0
     tr_loss = 0
+
     if args.do_train:
-        train_features = convert_examples_to_features(
+        train_features, num_unkown = convert_examples_to_features(
             train_examples, label_list, args.max_seq_length, tokenizer)
+
+        logger.info(f'Number of "[UNK]" in training data: {num_unkown}')
+
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", len(train_examples))
         logger.info("  Batch size = %d", args.train_batch_size)
@@ -868,9 +874,10 @@ def main():
         del train_ids
         logger.info('Good news: No training guids found in test guids.')
 
-        eval_features = convert_examples_to_features(
+        eval_features, num_unkown = convert_examples_to_features(
             eval_examples, label_list, args.max_seq_length, tokenizer)
 
+        logger.info(f'Number of "[UNK]" in test data: {num_unkown}')
         logger.info("***** Running evaluation *****")
         logger.info("  Num examples = %d", len(eval_examples))
         logger.info("  Batch size = %d", args.eval_batch_size)
