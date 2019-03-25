@@ -828,10 +828,11 @@ def main():
     os.mkdir(full_path)
 
     if args.do_train:
-        if args.cross_validation_fold and args.cross_validation_fold != 10: # Only use 10 for now
-            pass
+        if args.cross_validation_fold:
+            logger.info('Cross validation is used, so no model is saved.')
         else:
             # Save a trained model and the associated configuration
+            logger.info('Saving model!')
             model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model it-self
             output_model_file = os.path.join(full_path, WEIGHTS_NAME)
             torch.save(model_to_save.state_dict(), output_model_file)
@@ -862,6 +863,7 @@ def main():
         # Clean memory
         del eval_ids
         del train_ids
+        logger.info('Good news: No training guids found in test guids.')
 
         eval_features = convert_examples_to_features(
             eval_examples, label_list, args.max_seq_length, tokenizer)
