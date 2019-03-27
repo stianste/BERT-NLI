@@ -107,7 +107,7 @@ class TOEFL11Processor(DataProcessor):
     def __init__(self, use_reddit_labels: bool=False):
         self.id2label = {}
         self.use_reddit_labels = use_reddit_labels
-        self.label_white_list = label_white_list
+        self.label_white_list = None
         if self.use_reddit_labels:
             self.label_map = {
                 "HIN" : "Hindi",
@@ -161,6 +161,7 @@ class TOEFL11Processor(DataProcessor):
 
         filenames = [filename for filename in os.listdir(full_path)]
         for filename in filenames:
+            example_id = filename.split('.')[1]
             with open(os.path.join(full_path, filename), "r") as f:
                 label = self.id2label[example_id]
                 if self.label_white_list and label not in self.label_white_list:

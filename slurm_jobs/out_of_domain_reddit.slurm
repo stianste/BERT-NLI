@@ -55,7 +55,8 @@ do
     --eval_batch_size 8 \
     --learning_rate $LEARNING_RATE \
     --num_train_epochs $NUM_TRAIN_EPOCHS \
-    --output_dir $OUTPUT_DIR
+    --output_dir $OUTPUT_DIR \
+    --cross_validation_fold $i
 done
 
 python -m scripts.join_cross_validation_results \

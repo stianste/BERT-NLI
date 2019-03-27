@@ -34,7 +34,7 @@ parser.add_argument("--output_dir",
                     help="The output directory where the model predictions and checkpoints will be written.")
 parser.add_argument("--cross_k",
                     type=int,
-                    default=10
+                    default=10,
                     help="The number of folds to use for cross validation.")
 parser.add_argument("--full_path",
                     type=str,
