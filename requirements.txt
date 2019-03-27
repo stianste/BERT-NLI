@@ -7,4 +7,5 @@ nltk
 sentencepiece
 scikit-learn
 matplotlib
+pyspellchecker
 
