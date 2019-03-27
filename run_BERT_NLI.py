@@ -154,6 +154,10 @@ class TOEFL11Processor(DataProcessor):
         ]))
 
         assert len(labels) == 11, f'TOEFL11 Should have 11 labels. Actual: {len(labels)}'
+
+        if self.use_reddit_labels:
+            return [self.reddit_labels[label] for label in labels]
+
         return labels
 
     def _get_examples(self, full_path: str) -> List[InputExample]:
