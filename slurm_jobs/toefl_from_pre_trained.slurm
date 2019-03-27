@@ -43,5 +43,5 @@ python ./run_BERT_NLI.py \
   --train_batch_size 16 \
   --learning_rate 2e-5 \
   --num_train_epochs 5 \
-  --output_dir ./pre_trained_toefl11_results \
+  --output_dir ./results/pre_trained_toefl \
   --vocab_file ./data/vocabs/bert-large-uncased-vocab_filled.txt \

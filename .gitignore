@@ -113,7 +113,7 @@ venv.bak/
 *.bin
 /outputs/
 *_models/
-*_results/
+*results/
 
 # vscode
 .vscode/

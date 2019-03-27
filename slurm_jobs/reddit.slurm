@@ -38,7 +38,7 @@ export TRAIN_BATCH_SIZE=16
 export LEARNING_RATE=2e-5
 export NUM_TRAIN_EPOCHS=5
 export K=10
-export OUTPUT_DIR=./reddit_results
+export OUTPUT_DIR=./results/reddit
 
 #!/bin/bash
 for i in $(seq 1 $K)
