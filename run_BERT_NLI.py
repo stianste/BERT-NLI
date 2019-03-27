@@ -163,9 +163,8 @@ class TOEFL11Processor(DataProcessor):
     def _get_examples(self, full_path: str) -> List[InputExample]:
         examples = []
 
-        filenames = [filename for filename in os.listdir(full_path)]
-        for filename in filenames:
-            example_id = filename.split('.')[1]
+        for filename in os.listdir(full_path):
+            example_id = filename.split('.')[0]
             with open(os.path.join(full_path, filename), "r") as f:
                 label = self.id2label[example_id]
                 if self.label_white_list and label not in self.label_white_list:
