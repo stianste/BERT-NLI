@@ -1,3 +1,4 @@
+import re
 from os import path
 from download_vocab import download_vocab
 from spellchecker import SpellChecker
@@ -32,15 +33,14 @@ spell_checker = SpellChecker()
 with open(f'{base_path}/all_lower.txt', 'r') as model_text_file:
     for sentence in model_text_file.readlines():
         words = word_tokenize(sentence)
+        words = [re.sub('\W+', '', word) for word in words]
         misspelled = spell_checker.unknown(words)
-        # print("Words", words)
-        # print("Misspelled", misspelled)
-        # print("\n")
         for word in misspelled:
-            misspelled_words.add(word)
-            misspelled_counter[word] += 1
+            if word: # Ignore empty string
+                misspelled_words.add(word)
+                misspelled_counter[word] += 1
 
-misspelled_word_counts = misspelled_counter.most_common()[5:]
+misspelled_word_counts = misspelled_counter.most_common()
 print("Most common mispelled words:", misspelled_word_counts[:10])
 misspelled_word_counts.reverse()
 
