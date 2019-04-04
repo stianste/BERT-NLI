@@ -33,8 +33,14 @@ spell_checker = SpellChecker()
 with open(f'{base_path}/all_lower.txt', 'r') as model_text_file:
     for sentence in model_text_file.readlines():
         words = word_tokenize(sentence)
-        words = [re.sub('\W+', '', word) for word in words]
-        misspelled = spell_checker.unknown(words)
+        words = [re.sub('\W+', ' ', word) for word in words]
+        split_words = []
+
+        for word in words:
+            for split_word in word.split():
+               split_words.append(split_word) 
+
+        misspelled = spell_checker.unknown(split_words)
         for word in misspelled:
             if word: # Ignore empty string
                 misspelled_words.add(word)
