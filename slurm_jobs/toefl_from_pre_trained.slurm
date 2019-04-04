@@ -35,13 +35,14 @@ export DATA_DIR=./data/NLI-shared-task-2017/
 
 python ./run_BERT_NLI.py \
   --task_name toefl11 \
+  --do_lower_case \
   --do_train \
   --do_eval \
   --data_dir $DATA_DIR \
-  --bert_model ./toefl11_models/seq_128_lower_False_epochs_50.0_lr_3e-05/ \
+  --bert_model ./toefl11_models/seq_128_lower_False_epochs_60.0_lr_3e-05/ \
   --max_seq_length 128 \
   --train_batch_size 16 \
-  --learning_rate 2e-5 \
-  --num_train_epochs 5 \
+  --num_train_epochs 4 \
   --output_dir ./results/pre_trained_toefl \
-  --vocab_file ./data/vocabs/bert-large-uncased-vocab_filled.txt \
+  --vocab_file ./data/vocabs/bert-large-uncased-vocab_filled_misspelled.txt \
+

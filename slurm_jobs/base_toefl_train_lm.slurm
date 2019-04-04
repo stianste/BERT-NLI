@@ -1,19 +1,18 @@
 #!/bin/sh
-
 #SBATCH --partition=EPICALL
 #SBATCH --gres=gpu:2
-#SBATCH --time=30:00:00
+#SBATCH --time=150:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
 #SBATCH --mem=64000
-#SBATCH --job-name="BERT-NLI-TOEFL"
-#SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/toefl.out
+#SBATCH --job-name="BASE-TRAIN-LM"
+#SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/base_toefl_train_lm.out
 #SBATCH --mail-user=stianste@stud.ntnu.no
 #SBATCH --mail-type=ALL
 
 WORKDIR=${SLURM_SUBMIT_DIR}
 cd ${WORKDIR}
-echo "We are running from this directory: $WORKDIR"
+echo "We are running from this directory: $SLURM_SUBMIT_DIR"
 echo "The name of the job is: $SLURM_JOB_NAME"
 echo "The job ID is $SLURM_JOB_ID"
 echo "The job was run on these nodes: $SLURM_JOB_NODELIST"
@@ -32,17 +31,14 @@ virtualenv venv/
 source venv/bin/activate
 pip install -r requirements.txt
 
-export DATA_DIR=./data/NLI-shared-task-2017/
-
-python ./run_BERT_NLI.py \
-  --task_name toefl11 \
+python ./run_BERT_train_lm.py \
+  --bert_model bert-base-uncased \
   --do_lower_case
   --do_train \
-  --do_eval \
-  --data_dir $DATA_DIR \
-  --bert_model bert-base-uncased \
+  --train_file data/NLI-shared-task-2017/all_lower.txt \
+  --output_dir toefl11_models \
+  --num_train_epochs 100 \
+  --train_batch_size 32 \
   --max_seq_length 128 \
-  --train_batch_size 16 \
-  --num_train_epochs 5 \
-  --output_dir ./results/toefl/base
+  --vocab_file data/vocabs/bert-large-uncased-vocab_filled_misspelled.txt \
 

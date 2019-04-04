@@ -1,7 +1,7 @@
 #!/bin/sh
 #SBATCH --partition=EPICALL
 #SBATCH --gres=gpu:2
-#SBATCH --time=120:00:00
+#SBATCH --time=130:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
 #SBATCH --mem=64000
@@ -36,8 +36,9 @@ python ./run_BERT_train_lm.py \
   --do_train \
   --train_file data/NLI-shared-task-2017/all_lower.txt \
   --output_dir toefl11_models \
-  --num_train_epochs 50 \
+  --num_train_epochs 60 \
   --learning_rate 3e-5 \
   --train_batch_size 32 \
   --max_seq_length 128 \
-  --vocab_file data/vocabs/bert-large-uncased-vocab_filled.txt \
+  --vocab_file data/vocabs/bert-large-uncased-vocab_filled_misspelled.txt \
+

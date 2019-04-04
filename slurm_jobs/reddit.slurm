@@ -35,7 +35,7 @@ export DATA_DIR=./data/RedditL2/reddit_downsampled/europe_data
 
 export MAX_SEQ_LENGTH=128
 export TRAIN_BATCH_SIZE=16
-export LEARNING_RATE=2e-5
+export LEARNING_RATE=5e-5
 export NUM_TRAIN_EPOCHS=5
 export K=10
 export OUTPUT_DIR=./results/reddit
@@ -51,7 +51,7 @@ do
     --do_eval \
     --do_lower_case \
     --data_dir $DATA_DIR \
-    --bert_model bert-large-uncased \
+    --bert_model bert-base-uncased \
     --max_seq_length $MAX_SEQ_LENGTH \
     --train_batch_size $TRAIN_BATCH_SIZE \
     --eval_batch_size 8 \
