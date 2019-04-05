@@ -475,9 +475,12 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
 
     features = []
     num_unkown = 0
+    unk_id = tokenizer.vocab['[UNK]']
+    logger.info(f'UNK id is: {unk_id}')
+
     for (ex_index, example) in enumerate(examples):
         tokens_a = tokenizer.tokenize(example.text_a)
-        num_unkown += tokens_a.count('[UNK]')
+
 
         tokens_b = None
         if example.text_b:
@@ -517,6 +520,8 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             segment_ids += [1] * (len(tokens_b) + 1)
 
         input_ids = tokenizer.convert_tokens_to_ids(tokens)
+
+        num_unkown += input_ids.count(unk_id)
 
         # The mask has 1 for real tokens and 0 for padding tokens. Only real
         # tokens are attended to.
@@ -920,6 +925,16 @@ def main():
             label_ids = label_ids.to('cpu').numpy()
 
             outputs = np.argmax(logits, axis=1)
+
+            print('Predicted outputs:')
+            print(outputs)
+            print('Predicted langs:')
+            print([label_list[i] for i in outputs])
+            print('Correct ids:')
+            print(label_ids)
+            print('Correct langs:')
+            print([label_list[i] for i in label_ids])
+
             all_inputs = np.append(all_inputs, label_ids)
             all_outputs = np.append(all_outputs, outputs)
 
