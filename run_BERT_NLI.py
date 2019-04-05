@@ -156,7 +156,7 @@ class TOEFL11Processor(DataProcessor):
         assert len(labels) == 11, f'TOEFL11 Should have 11 labels. Actual: {len(labels)}'
 
         if self.use_reddit_labels:
-            return [self.reddit_labels[label] for label in labels]
+            return [self.label_map[label] for label in labels]
 
         return labels
 
@@ -171,12 +171,16 @@ class TOEFL11Processor(DataProcessor):
                     continue
 
                 text = "".join(f.readlines()).lower()
+                logger.info(f'Text: {text}')
+                shorter_texts = split_text_into_shorter_seqments(text)
                 example_id = filename.split(".")[0]
+
                 if self.use_reddit_labels:
                     label = self.label_map[label]
 
-                example = InputExample(guid=example_id, text_a=text, label=label)
-                examples.append(example)
+                for shorter_text in shorter_texts:
+                    example = InputExample(guid=example_id, text_a=shorter_text, label=label)
+                    examples.append(example)
 
         return examples
 
@@ -191,7 +195,7 @@ class TOEFL11Processor(DataProcessor):
             for line in f.readlines():
                 example_id, _, _, label = line.split(',')
                 if self.use_reddit_labels:
-                    label = self.label_map[label]
+                    label = self.label_map[label.strip()]
 
                 if self.label_white_list and label not in self.label_white_list:
                     continue
@@ -217,9 +221,11 @@ class RedditInDomainDataProcessor(DataProcessor):
                     full_path = f'{data_dir}/{language_folder}/{username}/{chunk}' 
                     with open(full_path, 'r') as f:
                         text = ''.join(f.readlines()).lower()
-                        user_examples.append(
-                            InputExample(guid=f'{username}_{chunk}', text_a=text, label=language)
-                        )
+                        shorter_texts = split_text_into_shorter_seqments(text)
+                        for shorter_text in shorter_texts:
+                            user_examples.append(
+                                InputExample(guid=f'{username}_{chunk}', text_a=shorter_text, label=language)
+                            )
 
                 self.user2examples[username] = user_examples
 
@@ -373,9 +379,12 @@ class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
                     full_path = f'{data_dir}/{language_folder}/{username}/{chunk}'
                     with open(full_path, 'r') as f:
                         text = ''.join(f.readlines()).lower()
-                        user_examples.append(
-                            InputExample(guid=f'{username}_{chunk}', text_a=text, label=language)
-                        )
+                        shorter_texts = split_text_into_shorter_seqments(text)
+
+                        for shorter_text in shorter_texts:
+                            user_examples.append(
+                                InputExample(guid=f'{username}_{chunk}', text_a=shorter_text, label=language)
+                            )
 
                 if is_europe:
                     self.europe_user2examples[username] = user_examples
@@ -433,9 +442,11 @@ class LargeReddit2TOEFL11Processor(DataProcessor):
                     full_path = f'{europe_dir}/{language_folder}/{username}/{chunk}'
                     with open(full_path, 'r') as f:
                         text = ''.join(f.readlines()).lower()
-                        examples.append(
-                            InputExample(guid=f'{username}_{chunk}', text_a=text, label=language)
-                        )
+                        shorter_texts = split_text_into_shorter_seqments(text)
+                        for shorter_text in shorter_texts:
+                            examples.append(
+                                InputExample(guid=f'{username}_{chunk}', text_a=shorter_text, label=language)
+                            )
 
         non_europe_dir = data_dir + '/non_europe_data'
         for language_folder in os.listdir(non_europe_dir):
@@ -448,9 +459,12 @@ class LargeReddit2TOEFL11Processor(DataProcessor):
                     full_path = f'{non_europe_dir}/{language_folder}/{username}/{chunk}'
                     with open(full_path, 'r') as f:
                         text = ''.join(f.readlines()).lower()
-                        examples.append(
-                            InputExample(guid=f'{username}_{chunk}', text_a=text, label=language)
-                        )
+                        shorter_texts = split_text_into_shorter_seqments(text)
+
+                        for shorter_text in shorter_texts:
+                            examples.append(
+                                InputExample(guid=f'{username}_{chunk}', text_a=shorter_text, label=language)
+                            )
 
         toefl_data_dir = './data/NLI-shared-task-2017/' + constants.TOEFL11_TRAINING_DATA_PATH
         examples += self.toefl_processor.get_train_examples(toefl_data_dir)
@@ -480,9 +494,8 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
 
     for (ex_index, example) in enumerate(examples):
         tokens_a = tokenizer.tokenize(example.text_a)
-
-
         tokens_b = None
+
         if example.text_b:
             tokens_b = tokenizer.tokenize(example.text_b)
             # Modifies `tokens_a` and `tokens_b` in place so that the total
@@ -587,6 +600,15 @@ def get_timestamp():
 
 def get_eval_folder_name(args):
     return f'seq_{args.max_seq_length}_batch_{args.train_batch_size }_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
+
+def split_text_into_shorter_seqments(text, max_seq_length=116): # Rougly account for tokenization
+    words = text.split()
+    shorter_texts = []
+    for i in range(0, len(words), max_seq_length):
+        sub_words = words[i:min(len(words), i + max_seq_length)]
+        shorter_texts.append(" ".join(sub_words))
+
+    return shorter_texts
 
 def main():
     parser = argparse.ArgumentParser()

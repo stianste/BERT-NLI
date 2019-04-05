@@ -1,0 +1,18 @@
+text = """
+Knowledge helps an inidvidual in making his career and helps him earning his livelihood. I believe that its better to specialize in specific subject because having broad knowledge of many academic subjects makes the person " Jack of all trades but master of none" . Even in today's world where education holds  lot of importance in both professional and personal lives knowledge in one specific field only proves helpful. Studying in one specific field helps an individual in acquiring maximum knowledge about that feild. with this person has to focus only on one subject this reduces his burden and he tries to excel in that feild.These days requirement is increasing more of specialised people. For example, demand for heart surgeons in hospitals is increasing day by day because of increasing heart problems. Patients also prefer going to those doctors who are specifically for those problems which they are suffering from rather than going to the general physician because they trust specialist doctors  more.like for any eye problem they will go to eye specialist, Studying in one specific field helps at professional level also.Big companies are recruting only those individuals who specialise in one subject only. They donot higher those individuals who have bit of  knowledge in all fields but rather they prefer hiring those people who have specialised knowledge of the feild in which the company deals  because these inidividuals who are masters in one subject will help in company' s growth and development. They willl bring recognition to the company. Students also prefer doing masters in one subject only because if they specialise in one subject this will bring for them more growth opportunities, more job opportunities and more recognition. As I have done my graduation in the field of interior designing but I am planning to do my mastersas commercial designer  because today's market  is full with interior designers but people prefer going to the specialists of all the fiilds. Like for kitchen designing they prefer going to kitchen specialist, for landscape designing they would go to landscape specialist, for furniture designing they will hire furniture designer. Even client's want masters for all the works they want to do. Even lot of renowned and reputed colleges give degree in one psrticular field. In the coming times there will be more need of specialised people. As scientists try to study and do reasearches in one field only because if they will try doing researches in all fields their work will be messed up and world won't get all advanced electronical gadgets or luxuries of life. So different scientists work in different fields and that too of their interest. So in the end I would like to conclude that its always better to sutdy and specialise in one subject only because with this person is able to focus in one direction only and doesn;t get hampered by other things and this brings more recognition and growth opprtunities in his life and his life becomes more organised,
+"""
+def split_text_into_shorter_seqments(text, max_seq_length=100):
+    words = text.split()
+    shorter_texts = []
+    for i in range(0, len(words), max_seq_length):
+        sub_words = words[i:min(len(words), i + max_seq_length)]
+        shorter_texts.append(" ".join(sub_words))
+
+    return shorter_texts
+
+shorter_texts = split_text_into_shorter_seqments(text)
+print(len(shorter_texts))
+print(len(text.split()) / 100)
+for shorter in shorter_texts:
+    print(shorter)
+    print(f'Length: {len(shorter.split())} \n')
