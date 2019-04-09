@@ -2,11 +2,11 @@
 
 #SBATCH --partition=EPICALL
 #SBATCH --gres=gpu:2
-#SBATCH --time=30:00:00
+#SBATCH --time=5:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
 #SBATCH --mem=64000
-#SBATCH --job-name="BERT-NLI-TOEFL"
+#SBATCH --job-name="single-toefl"
 #SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/toefl.out
 #SBATCH --mail-user=stianste@stud.ntnu.no
 #SBATCH --mail-type=ALL
@@ -36,13 +36,13 @@ export DATA_DIR=./data/NLI-shared-task-2017/
 
 python ./run_BERT_NLI.py \
   --task_name toefl11 \
-  --do_lower_case
+  --do_lower_case \
   --do_train \
   --do_eval \
   --data_dir $DATA_DIR \
   --bert_model bert-base-uncased \
   --max_seq_length 128 \
   --train_batch_size 16 \
-  --num_train_epochs 5 \
+  --num_train_epochs 4 \
   --output_dir ./results/toefl/base
 

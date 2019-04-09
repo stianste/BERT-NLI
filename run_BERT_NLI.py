@@ -171,7 +171,6 @@ class TOEFL11Processor(DataProcessor):
                     continue
 
                 text = "".join(f.readlines()).lower()
-                logger.info(f'Text: {text}')
                 shorter_texts = split_text_into_shorter_seqments(text)
                 example_id = filename.split(".")[0]
 
@@ -237,8 +236,6 @@ class RedditInDomainDataProcessor(DataProcessor):
 
             if num_examples > 1:
                 user_has_more_than_one_chunk = True
-
-            assert not num_examples > 3
 
         if not user_has_more_than_one_chunk:
             logger.warning('All users have only one example/chunk')
