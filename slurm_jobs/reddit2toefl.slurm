@@ -1,7 +1,7 @@
 #!/bin/sh
 #SBATCH --partition=EPICALL
 #SBATCH --gres=gpu:2
-#SBATCH --time=35:00:00
+#SBATCH --time=10:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
 #SBATCH --mem=64000
@@ -35,9 +35,9 @@ export DATA_DIR=./data/RedditL2/text_chunks
 
 export MAX_SEQ_LENGTH=128
 export TRAIN_BATCH_SIZE=16
-export LEARNING_RATE=2e-5
-export NUM_TRAIN_EPOCHS=5
-export OUTPUT_DIR=./toefl_results/large
+export LEARNING_RATE=5e-5
+export NUM_TRAIN_EPOCHS=4
+export OUTPUT_DIR=./results/reddit2toefl
 
 #!/bin/bash
 python ./run_BERT_NLI.py \
@@ -46,12 +46,10 @@ python ./run_BERT_NLI.py \
   --do_eval \
   --do_lower_case \
   --data_dir $DATA_DIR \
-  --bert_model ./toefl11_models/seq_128_lower_False_epochs_50.0_lr_3e-05/ \
+  --bert_model bert-base-uncased \
   --max_seq_length $MAX_SEQ_LENGTH \
   --train_batch_size $TRAIN_BATCH_SIZE \
-  --eval_batch_size 8 \
   --learning_rate $LEARNING_RATE \
   --num_train_epochs $NUM_TRAIN_EPOCHS \
   --output_dir $OUTPUT_DIR \
-  --vocab_file ./data/vocabs/bert-large-uncased-vocab_filled.txt \
 

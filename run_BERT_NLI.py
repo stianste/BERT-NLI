@@ -270,7 +270,6 @@ class RedditInDomainDataProcessor(DataProcessor):
         return self._get_examples_for_fold(self._get_dev_fold)
 
     def get_labels(self):
-        
         label2language = {
             "Austria" : "German",
             "Germany" : "German",
@@ -415,6 +414,63 @@ class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
                 examples[i] = example
 
         return examples
+
+class CommonLabelsReddit2TOEFL11Processor(DataProcessor):
+    """
+    A large data processor which uses all the data available and tests on the toefl dev set.
+    """
+    def __init__(self):
+        self.toefl_processor = TOEFL11Processor()
+        self.reddit_processor = RedditInDomainDataProcessor(0)
+
+        self.reddit_labels_to_toefl = {
+            "Germany" : "GER",
+            "Spain" : "SPA",
+            "Italy" : "ITA",
+            "France" : "FRE",
+            "Turkey" : "TUR",
+        }
+
+    def get_train_examples(self, data_dir):
+        toefl_data_dir = './data/NLI-shared-task-2017/' + constants.TOEFL11_TRAINING_DATA_PATH
+        examples = self.toefl_processor.get_train_examples(toefl_data_dir)
+
+        # Reddit Europe data
+        examples += self._get_reddit_examples(data_dir + '/europe_data')
+        examples += self._get_reddit_examples(data_dir + '/non_europe_data')
+
+        return examples
+
+    def _get_reddit_examples(self, data_dir):
+        examples = []
+        for language_folder in os.listdir(data_dir):
+            language = language_folder.split('.')[0]
+
+            if not language in self.reddit_labels_to_toefl:
+                continue
+
+            language = self.reddit_labels_to_toefl[language]
+
+            for username in os.listdir(f'{data_dir}/{language_folder}'):
+                for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
+                    full_path = f'{data_dir}/{language_folder}/{username}/{chunk}'
+                    with open(full_path, 'r') as f:
+                        text = ''.join(f.readlines()).lower()
+                        shorter_texts = split_text_into_shorter_seqments(text)
+                        for shorter_text in shorter_texts:
+                            examples.append(
+                                InputExample(guid=f'{username}_{chunk}', text_a=shorter_text, label=language)
+                            )
+
+        return examples
+
+
+    def get_dev_examples(self, _):
+        data_dir = './data/NLI-shared-task-2017/' + constants.TOEFL11_DEV_DATA_PATH
+        return self.toefl_processor.get_dev_examples(data_dir)
+
+    def get_labels(self):
+        return self.toefl_processor.get_labels()
 
 class LargeReddit2TOEFL11Processor(DataProcessor):
     """
@@ -705,14 +761,14 @@ def main():
         "toefl11": TOEFL11Processor,
         "redditl2": RedditInDomainDataProcessor,
         "out-of-domain-redditl2": RedditOutOfDomainDataProcessor,
-        "reddit2toefl": LargeReddit2TOEFL11Processor,
+        "reddit2toefl": CommonLabelsReddit2TOEFL11Processor,
     }
 
     num_labels_task = {
         "toefl11": 11,
         "redditl2": 23,
         "out-of-domain-redditl2": 23,
-        "reddit2toefl": 5,
+        "reddit2toefl": 11,
     }
 
     if args.local_rank == -1 or args.no_cuda:
