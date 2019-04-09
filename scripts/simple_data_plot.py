@@ -4,18 +4,18 @@ import matplotlib.pyplot as plt
 # Data for plotting
 epochs = [3, 4, 5, 10, 20]
 eval_loss = [
-       1.189,
-       1.318,
-       1.448,
-       1.848,
-       2.208
+       1.258,
+       1.423,
+       1.673,
+       2.177,
+       2.601
 ]
 train_loss = [
-       0.496,
-       0.205,
-       0.082,
-       0.003,
-       0.000
+       0.405,
+       0.192,
+       0.067,
+       0.005,
+       0.002
 ]
 
 fig, ax = plt.subplots()

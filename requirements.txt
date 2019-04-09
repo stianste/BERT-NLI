@@ -8,4 +8,5 @@ sentencepiece
 scikit-learn
 matplotlib
 pyspellchecker
+scipy
 

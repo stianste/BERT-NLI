@@ -945,12 +945,8 @@ def main():
 
             outputs = np.argmax(logits, axis=1)
 
-            print('Predicted outputs:')
-            print(outputs)
             print('Predicted langs:')
             print([label_list[i] for i in outputs])
-            print('Correct ids:')
-            print(label_ids)
             print('Correct langs:')
             print([label_list[i] for i in label_ids])
 
