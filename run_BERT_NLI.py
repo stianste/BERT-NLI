@@ -9,6 +9,7 @@ import time
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from tqdm import tqdm, trange
 from typing import List
@@ -43,7 +44,8 @@ logger = logging.getLogger(__name__)
 class InputFeatures(object):
     """A single set of features of data."""
 
-    def __init__(self, input_ids, input_mask, segment_ids, label_id):
+    def __init__(self, guid, input_ids, input_mask, segment_ids, label_id):
+        self.guid = guid
         self.input_ids = input_ids
         self.input_mask = input_mask
         self.segment_ids = segment_ids
@@ -131,7 +133,8 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             logger.info("label: %s (id = %d)" % (example.label, label_id))
 
         features.append(
-                InputFeatures(input_ids=input_ids,
+                InputFeatures(guid=example.guid,
+                              input_ids=input_ids,
                               input_mask=input_mask,
                               segment_ids=segment_ids,
                               label_id=label_id))
@@ -493,11 +496,12 @@ def main():
         logger.info("  Num examples = %d", len(eval_examples))
         logger.info("  Batch size = %d", args.eval_batch_size)
 
+        all_guids = torch.tensor([f.guid for f in eval_features], dtype=torch.long)
         all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
         all_label_ids = torch.tensor([f.label_id for f in eval_features], dtype=torch.long)
-        eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
+        eval_data = TensorDataset(all_guids, all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
 
         # Run prediction for full data
         eval_sampler = SequentialSampler(eval_data)
@@ -506,10 +510,14 @@ def main():
         model.eval()
         eval_loss, eval_accuracy = 0, 0
         nb_eval_steps, nb_eval_examples = 0, 0
+
+        all_guids = np.array([])
         all_inputs = np.array([])
         all_outputs = np.array([])
+
  
-        for input_ids, input_mask, segment_ids, label_ids in tqdm(eval_dataloader, desc="Evaluating"):
+        for guids, input_ids, input_mask, segment_ids, label_ids in tqdm(eval_dataloader, desc="Evaluating"):
+            guids = guids.to(device)
             input_ids = input_ids.to(device)
             input_mask = input_mask.to(device)
             segment_ids = segment_ids.to(device)
@@ -519,16 +527,18 @@ def main():
                 tmp_eval_loss = model(input_ids, segment_ids, input_mask, label_ids)
                 logits = model(input_ids, segment_ids, input_mask)
 
+            guids = guids.detach().cpu().numpy()
             logits = logits.detach().cpu().numpy()
             label_ids = label_ids.to('cpu').numpy()
 
             outputs = np.argmax(logits, axis=1)
 
-            print('Predicted langs:')
-            print([label_list[i] for i in outputs])
-            print('Correct langs:')
-            print([label_list[i] for i in label_ids])
+            logger.info('Predicted langs:')
+            logger.info([label_list[i] for i in outputs])
+            logger.info('Correct langs:')
+            logger.info([label_list[i] for i in label_ids])
 
+            all_guids = np.append(all_guids, guids)
             all_inputs = np.append(all_inputs, label_ids)
             all_outputs = np.append(all_outputs, outputs)
 
@@ -559,12 +569,12 @@ def main():
             eval_foldername = get_eval_folder_name(args)
             folder_path = os.path.join(args.output_dir, eval_foldername)
             os.makedirs(folder_path, exist_ok=True)
-            output_eval_file = folder_path + f'/fold_{args.cross_validation_fold}.txt'
+            output_eval_file = folder_path + f'/fold_{args.cross_validation_fold}'
 
         else:
             timestamp = get_timestamp()
             eval_filename = f'{timestamp}_acc{eval_accuracy:.3f}_seq_{args.max_seq_length}_batch_{args.train_batch_size }_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
-            output_eval_file = os.path.join(args.output_dir, f'{eval_filename}.txt')
+            output_eval_file = os.path.join(args.output_dir, f'{eval_filename}')
 
             # plot_confusion_matrix(all_inputs, all_outputs, classes=label_list, normalize=True,
             #                     title='Normalized confusion matrix')
@@ -572,11 +582,21 @@ def main():
             # plt.savefig(f'./out/confusion_matrices/{args.bert_model}_{eval_filename}.png')
 
 
-        with open(output_eval_file, "w") as writer:
+        with open(output_eval_file + '.txt', "w") as writer:
             logger.info("***** Eval results *****")
             for key in sorted(result.keys()):
                 logger.info("  %s = %s", key, str(result[key]))
                 writer.write("%s = %s\n" % (key, str(result[key])))
+
+        prediction_df = pd.DataFrame({
+            "guid" : all_guids,
+            "input" : all_inputs,
+            "output" : all_outputs,
+            "input_label" : [label_list[i] for i in all_inputs],
+            "output_label" : [label_list[i] for i in all_outputs],
+        })
+
+        prediction_df.to_csv(f'pred_{output_eval_file}.csv', index=False)
 
 if __name__ == "__main__":
     main()
