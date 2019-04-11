@@ -167,6 +167,7 @@ class TOEFL11Processor(DataProcessor):
             example_id = filename.split('.')[0]
             with open(os.path.join(full_path, filename), "r") as f:
                 label = self.id2label[example_id]
+
                 if self.label_white_list and label not in self.label_white_list:
                     continue
 
@@ -177,8 +178,8 @@ class TOEFL11Processor(DataProcessor):
                 if self.use_reddit_labels:
                     label = self.label_map[label]
 
-                for shorter_text in shorter_texts:
-                    example = InputExample(guid=example_id, text_a=shorter_text, label=label)
+                for i, shorter_text in enumerate(shorter_texts):
+                    example = InputExample(guid=f'{example_id}_{i}', text_a=shorter_text, label=label)
                     examples.append(example)
 
         return examples
@@ -780,6 +781,7 @@ def main():
         n_gpu = 1
         # Initializes the distributed backend which will take care of sychronizing nodes/GPUs
         torch.distributed.init_process_group(backend='nccl')
+
     logger.info("device: {} n_gpu: {}, distributed training: {}, 16-bits training: {}".format(
         device, n_gpu, bool(args.local_rank != -1), args.fp16))
 
@@ -792,6 +794,7 @@ def main():
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
+
     if n_gpu > 0:
         torch.cuda.manual_seed_all(args.seed)
 
@@ -838,7 +841,9 @@ def main():
 
     if args.fp16:
         model.half()
+
     model.to(device)
+
     if args.local_rank != -1:
         try:
             from apex.parallel import DistributedDataParallel as DDP
@@ -846,6 +851,7 @@ def main():
             raise ImportError("Please install apex from https://www.github.com/nvidia/apex to use distributed and fp16 training.")
 
         model = DDP(model)
+
     elif n_gpu > 1:
         model = torch.nn.DataParallel(model)
 
@@ -876,6 +882,7 @@ def main():
         logger.info("  Num examples = %d", len(train_examples))
         logger.info("  Batch size = %d", args.train_batch_size)
         logger.info("  Num steps = %d", num_train_optimization_steps)
+
         if args.cross_validation_fold:
             logger.info(f'Cross validation fold: {args.cross_validation_fold}')
 
@@ -888,9 +895,11 @@ def main():
             train_sampler = RandomSampler(train_data)
         else:
             train_sampler = DistributedSampler(train_data)
+
         train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size)
 
         model.train()
+
         for _ in trange(int(args.num_train_epochs), desc="Epoch"):
             tr_loss = 0
             nb_tr_examples, nb_tr_steps = 0, 0
