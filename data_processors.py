@@ -50,27 +50,8 @@ class DataProcessor(object):
 class TOEFL11Processor(DataProcessor):
     """Processor for the TOEFL11 data set."""
 
-    def __init__(self, use_reddit_labels: bool=False):
+    def __init__(self):
         self.id2label = {}
-        self.use_reddit_labels = use_reddit_labels
-        self.label_white_list = None
-        if self.use_reddit_labels:
-            self.label_map = {
-                "HIN" : "Hindi",
-                "ARA" : "Arabic",
-                "JPN" : "Japanese",
-                "GER" : "German",
-                "TEL" : "Telugu",
-                "KOR" : "Korean",
-                "SPA" : "Spanish",
-                "ITA" : "Italian",
-                "CHI" : "Chinese",
-                "FRE" : "French",
-                "TUR" : "Turkish",
-            }
-
-    def set_label_white_list(self, label_white_list: set):
-        self.label_white_list = label_white_list
 
     def get_train_examples(self, data_dir: str) -> List[InputExample]:
         full_path = data_dir + constants.TOEFL11_TRAINING_DATA_PATH
@@ -99,10 +80,7 @@ class TOEFL11Processor(DataProcessor):
 
         assert len(labels) == 11, f'TOEFL11 Should have 11 labels. Actual: {len(labels)}'
 
-        if self.use_reddit_labels:
-            return [self.label_map[label] for label in labels]
-
-        return labels
+        return sorted(labels)
 
     def _get_examples(self, full_path: str) -> List[InputExample]:
         examples = []
@@ -112,14 +90,8 @@ class TOEFL11Processor(DataProcessor):
             with open(os.path.join(full_path, filename), "r") as f:
                 label = self.id2label[example_id]
 
-                if self.label_white_list and label not in self.label_white_list:
-                    continue
-
                 text = "".join(f.readlines()).lower()
                 example_id = filename.split(".")[0]
-
-                if self.use_reddit_labels:
-                    label = self.label_map[label]
 
                 example = InputExample(guid=example_id, text_a=text, label=label)
                 examples.append(example)
@@ -136,12 +108,6 @@ class TOEFL11Processor(DataProcessor):
         with open(filepath, "r") as f:
             for line in f.readlines():
                 example_id, _, _, label = line.split(',')
-                if self.use_reddit_labels:
-                    label = self.label_map[label.strip()]
-
-                if self.label_white_list and label not in self.label_white_list:
-                    continue
-
                 self.id2label[example_id.strip()] = label.strip()
 
 
@@ -274,7 +240,7 @@ class RedditInDomainDataProcessor(DataProcessor):
 
         language_list = list(set(label2language.values()))
         assert len(language_list) == 23
-        return language_list 
+        return sorted(language_list)
 
 class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
     """Processor for the RedditL2 data set out of domain"""
@@ -362,7 +328,7 @@ class CommonLabelsReddit2TOEFL11Processor(DataProcessor):
         }
 
     def get_train_examples(self, data_dir):
-        toefl_data_dir = './data/NLI-shared-task-2017/' + constants.TOEFL11_TRAINING_DATA_PATH
+        toefl_data_dir = './data/NLI-shared-task-2017/'
         examples = self.toefl_processor.get_train_examples(toefl_data_dir)
 
         # Reddit Europe data
@@ -392,68 +358,9 @@ class CommonLabelsReddit2TOEFL11Processor(DataProcessor):
 
         return examples
 
-
     def get_dev_examples(self, _):
-        data_dir = './data/NLI-shared-task-2017/' + constants.TOEFL11_DEV_DATA_PATH
+        data_dir = './data/NLI-shared-task-2017/'
         return self.toefl_processor.get_dev_examples(data_dir)
 
     def get_labels(self):
         return self.toefl_processor.get_labels()
-
-class LargeReddit2TOEFL11Processor(DataProcessor):
-    """
-    A large data processor which uses all the data available and tests on the toefl dev set.
-    """
-    def __init__(self):
-        self.toefl_processor = TOEFL11Processor(use_reddit_labels=True)
-        self.reddit_processor = RedditInDomainDataProcessor(0)
-        self.get_labels()
-        self.toefl_processor.set_label_white_list(self.common_labels)
-
-    def get_train_examples(self, data_dir):
-        examples = []
-        europe_dir = data_dir + '/europe_data'
-        for language_folder in os.listdir(europe_dir):
-            language = language_folder
-            if language not in self.common_labels:
-                continue
-
-            for username in os.listdir(f'{europe_dir}/{language_folder}'):
-                for chunk in os.listdir(f'{europe_dir}/{language_folder}/{username}'):
-                    full_path = f'{europe_dir}/{language_folder}/{username}/{chunk}'
-                    with open(full_path, 'r') as f:
-                        text = ''.join(f.readlines()).lower()
-                        examples.append(
-                            InputExample(guid=f'{username}_{chunk}', text_a=text, label=language)
-                        )
-
-        non_europe_dir = data_dir + '/non_europe_data'
-        for language_folder in os.listdir(non_europe_dir):
-            language = language_folder
-            if language not in self.common_labels:
-                continue
-
-            for username in os.listdir(f'{non_europe_dir}/{language_folder}'):
-                for chunk in os.listdir(f'{non_europe_dir}/{language_folder}/{username}'):
-                    full_path = f'{non_europe_dir}/{language_folder}/{username}/{chunk}'
-                    with open(full_path, 'r') as f:
-                        text = ''.join(f.readlines()).lower()
-
-                        examples.append(
-                            InputExample(guid=f'{username}_{chunk}', text_a=text, label=language)
-                        )
-
-        toefl_data_dir = './data/NLI-shared-task-2017/' + constants.TOEFL11_TRAINING_DATA_PATH
-        examples += self.toefl_processor.get_train_examples(toefl_data_dir)
-
-        return examples
-
-    def get_dev_examples(self, _):
-        data_dir = './data/NLI-shared-task-2017/' + constants.TOEFL11_DEV_DATA_PATH
-        return self.toefl_processor.get_dev_examples(data_dir)
-
-    def get_labels(self):
-        toefl_labels = self.toefl_processor.get_labels()
-        reddit_labels = self.reddit_processor.get_labels()
-        self.common_labels = set(toefl_labels).intersection(reddit_labels)
-        return list(self.common_labels)
