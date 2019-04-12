@@ -111,9 +111,9 @@ venv.bak/
 /data/RedditL2/reddit_downsampled/
 *.tar.gz
 *.bin
+*.json
 /outputs/
 *_models/
-*results/
 
 # vscode
 .vscode/
