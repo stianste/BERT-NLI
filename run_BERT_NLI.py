@@ -517,7 +517,7 @@ def main():
 
         all_inputs = np.array([])
         all_outputs = np.array([])
-
+        all_predicted_logits = np.array([])
  
         for input_ids, input_mask, segment_ids, label_ids in tqdm(eval_dataloader, desc="Evaluating"):
             input_ids = input_ids.to(device)
@@ -533,6 +533,8 @@ def main():
             label_ids = label_ids.to('cpu').numpy()
 
             outputs = np.argmax(logits, axis=1)
+            # Get the logit for each row in the batch
+            predicted_logits = np.amax(logits, axis=1)
 
             logger.info('Predicted langs:')
             logger.info([label_list[i] for i in outputs])
@@ -541,6 +543,7 @@ def main():
 
             all_inputs = np.append(all_inputs, label_ids)
             all_outputs = np.append(all_outputs, outputs)
+            all_predicted_logits = np.append(all_predicted_logits, predicted_logits)
 
             tmp_eval_accuracy = accuracy(logits, label_ids)
 
@@ -595,6 +598,7 @@ def main():
             "guid" : all_guids,
             "input" : all_inputs,
             "output" : all_outputs,
+            "logit" : all_predicted_logits,
             "input_label" : [label_list[int(i)] for i in all_inputs],
             "output_label" : [label_list[int(i)] for i in all_outputs],
         })
