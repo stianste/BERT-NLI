@@ -128,8 +128,6 @@ class BinaryTOEFL11Processor(TOEFL11Processor):
             with open(os.path.join(full_path, filename), "r") as f:
                 label = self.id2label[example_id]
                 is_correct = label == self.lang
-                if is_correct:
-                    print(f'{label} is the label')
 
                 text = "".join(f.readlines()).lower()
                 example_id = filename.split(".")[0]
@@ -137,7 +135,7 @@ class BinaryTOEFL11Processor(TOEFL11Processor):
                 example = InputExample(guid=example_id, text_a=text, label=is_correct)
                 examples.append(example)
 
-        assert len([1 for example in examples if example.label]) > 0
+        assert len([1 for example in examples if example.label]) > 0 # At least one example must be true.
         return examples
 
 class RedditInDomainDataProcessor(DataProcessor):
