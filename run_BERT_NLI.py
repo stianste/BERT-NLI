@@ -536,10 +536,11 @@ def main():
             # Get the logit for each row in the batch
             predicted_logits = np.amax(logits, axis=1)
 
-            logger.info('Predicted langs:')
-            logger.info([label_list[i] for i in outputs])
-            logger.info('Correct langs:')
-            logger.info([label_list[i] for i in label_ids])
+            if False:
+                logger.info('Predicted langs:')
+                logger.info([label_list[i] for i in outputs])
+                logger.info('Correct langs:')
+                logger.info([label_list[i] for i in label_ids])
 
             all_inputs = np.append(all_inputs, label_ids)
             all_outputs = np.append(all_outputs, outputs)
