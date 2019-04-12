@@ -3,6 +3,7 @@ import json
 import logging
 
 from sklearn.neural_network import MLPClassifier
+from sklearn.svm import SVC
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
@@ -63,13 +64,9 @@ def main():
 
     logger.info('Evaluating model')
 
-    outputs = model.predict(X)
-    num_correct = sum([1 for i in range(len(outputs)) if outputs[i] == y[i]])
+    eval_accuracy = model.score(X, y)
 
     logger.info('***** Results *****')
-    logger.info(f'{num_correct} out of {len(X)} correct.')
-
-    eval_accuracy = num_correct / len(X)
     logger.info(f'Accuracy: {eval_accuracy:.3f}%')
 
 if __name__ == '__main__':
