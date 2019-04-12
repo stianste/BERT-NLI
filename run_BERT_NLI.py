@@ -23,6 +23,7 @@ from data_processors import (
     RedditInDomainDataProcessor,
     RedditOutOfDomainDataProcessor,
     CommonLabelsReddit2TOEFL11Processor,
+    BinaryTOEFL11Processor,
 )
 
 from pytorch_pretrained_bert.tokenization import BertTokenizer
@@ -264,10 +265,15 @@ def main():
                         type=int, default=None,
                         help="If cross validating, this tells the model what fold to use.")
 
+    parser.add_argument('--binary_target_lang',
+                        type=str, default=None,
+                        help="If training a binary classifier for one language, this is the target label")
+
     args = parser.parse_args()
 
     processors = {
         "toefl11": TOEFL11Processor,
+        "binary-toefl11": BinaryTOEFL11Processor,
         "redditl2": RedditInDomainDataProcessor,
         "out-of-domain-redditl2": RedditOutOfDomainDataProcessor,
         "reddit2toefl": CommonLabelsReddit2TOEFL11Processor,
@@ -275,6 +281,7 @@ def main():
 
     num_labels_task = {
         "toefl11": 11,
+        "binary-toefl11": 2,
         "redditl2": 23,
         "out-of-domain-redditl2": 23,
         "reddit2toefl": 11,
@@ -320,6 +327,8 @@ def main():
     if args.cross_validation_fold:
         logger.info('Using cross-validation')
         processor = processors[task_name](args.cross_validation_fold)
+    elif args.binary_target_lang:
+        processor = processors[task_name](args.binary_target_lang)
     else:
         processor = processors[task_name]()
 
@@ -434,6 +443,9 @@ def main():
     # Save a trained model
     timestamp = get_timestamp()
     model_foldername = f'{timestamp}_seq_{args.max_seq_length}_batch_{args.train_batch_size }_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
+    if args.binary_target_lang:
+        model_foldername = args.binary_target_lang + '_' + model_foldername
+
     full_path = f'{args.output_dir}/{model_foldername}'
 
     if not os.path.isdir(args.output_dir):
@@ -568,6 +580,9 @@ def main():
             # np.set_printoptions(precision=2)
             # plt.savefig(f'./out/confusion_matrices/{args.bert_model}_{eval_filename}.png')
 
+
+        if args.binary_target_lang:
+            model_foldername = args.binary_target_lang + '_' + model_foldername
 
         with open(output_eval_file + '.txt', "w") as writer:
             logger.info("***** Eval results *****")

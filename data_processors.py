@@ -110,6 +110,32 @@ class TOEFL11Processor(DataProcessor):
                 example_id, _, _, label = line.split(',')
                 self.id2label[example_id.strip()] = label.strip()
 
+class BinaryTOEFL11Processor(TOEFL11Processor):
+    """Binary Processor for the TOEFL11 data set."""
+
+    def __init__(self, lang):
+        self.id2label = {}
+        self.lang = lang
+
+    def get_labels(self):
+        return [0, 1]
+
+    def _get_examples(self, full_path: str) -> List[InputExample]:
+        examples = []
+
+        for filename in os.listdir(full_path):
+            example_id = filename.split('.')[0]
+            with open(os.path.join(full_path, filename), "r") as f:
+                label = self.id2label[example_id]
+                is_correct = label == self.lang
+
+                text = "".join(f.readlines()).lower()
+                example_id = filename.split(".")[0]
+
+                example = InputExample(guid=example_id, text_a=text, label=is_correct)
+                examples.append(example)
+
+        return examples
 
 class RedditInDomainDataProcessor(DataProcessor):
     """Processor for the RedditL2 data set"""
