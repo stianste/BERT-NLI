@@ -172,15 +172,6 @@ def get_timestamp():
 def get_eval_folder_name(args):
     return f'seq_{args.max_seq_length}_batch_{args.train_batch_size }_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
 
-def split_text_into_shorter_seqments(text, max_seq_length=116): # Rougly account for tokenization
-    words = text.split()
-    shorter_texts = []
-    for i in range(0, len(words), max_seq_length):
-        sub_words = words[i:min(len(words), i + max_seq_length)]
-        shorter_texts.append(" ".join(sub_words))
-
-    return shorter_texts
-
 def main():
     parser = argparse.ArgumentParser()
 
@@ -496,12 +487,12 @@ def main():
         logger.info("  Num examples = %d", len(eval_examples))
         logger.info("  Batch size = %d", args.eval_batch_size)
 
-        all_guids = torch.tensor([f.guid for f in eval_features], dtype=torch.long)
+        all_guids = [f.guid for f in eval_features]
         all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
         all_label_ids = torch.tensor([f.label_id for f in eval_features], dtype=torch.long)
-        eval_data = TensorDataset(all_guids, all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
+        eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
 
         # Run prediction for full data
         eval_sampler = SequentialSampler(eval_data)
@@ -511,13 +502,11 @@ def main():
         eval_loss, eval_accuracy = 0, 0
         nb_eval_steps, nb_eval_examples = 0, 0
 
-        all_guids = np.array([])
         all_inputs = np.array([])
         all_outputs = np.array([])
 
  
-        for guids, input_ids, input_mask, segment_ids, label_ids in tqdm(eval_dataloader, desc="Evaluating"):
-            guids = guids.to(device)
+        for input_ids, input_mask, segment_ids, label_ids in tqdm(eval_dataloader, desc="Evaluating"):
             input_ids = input_ids.to(device)
             input_mask = input_mask.to(device)
             segment_ids = segment_ids.to(device)
@@ -527,7 +516,6 @@ def main():
                 tmp_eval_loss = model(input_ids, segment_ids, input_mask, label_ids)
                 logits = model(input_ids, segment_ids, input_mask)
 
-            guids = guids.detach().cpu().numpy()
             logits = logits.detach().cpu().numpy()
             label_ids = label_ids.to('cpu').numpy()
 
@@ -538,7 +526,6 @@ def main():
             logger.info('Correct langs:')
             logger.info([label_list[i] for i in label_ids])
 
-            all_guids = np.append(all_guids, guids)
             all_inputs = np.append(all_inputs, label_ids)
             all_outputs = np.append(all_outputs, outputs)
 
@@ -592,11 +579,11 @@ def main():
             "guid" : all_guids,
             "input" : all_inputs,
             "output" : all_outputs,
-            "input_label" : [label_list[i] for i in all_inputs],
-            "output_label" : [label_list[i] for i in all_outputs],
+            "input_label" : [label_list[int(i)] for i in all_inputs],
+            "output_label" : [label_list[int(i)] for i in all_outputs],
         })
 
-        prediction_df.to_csv(f'pred_{output_eval_file}.csv', index=False)
+        prediction_df.to_csv(f'{output_eval_file}.csv', index=False)
 
 if __name__ == "__main__":
     main()
