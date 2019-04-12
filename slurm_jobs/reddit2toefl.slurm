@@ -1,7 +1,7 @@
 #!/bin/sh
 #SBATCH --partition=EPICALL
 #SBATCH --gres=gpu:2
-#SBATCH --time=10:00:00
+#SBATCH --time=50:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
 #SBATCH --mem=64000
@@ -33,7 +33,7 @@ pip install -r requirements.txt
 
 export DATA_DIR=./data/RedditL2/text_chunks
 
-export MAX_SEQ_LENGTH=128
+export MAX_SEQ_LENGTH=512
 export TRAIN_BATCH_SIZE=16
 export LEARNING_RATE=5e-5
 export NUM_TRAIN_EPOCHS=4

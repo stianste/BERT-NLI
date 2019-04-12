@@ -328,6 +328,7 @@ def main():
         logger.info('Using cross-validation')
         processor = processors[task_name](args.cross_validation_fold)
     elif args.binary_target_lang:
+        logger.info(f'Target binary language is: {args.binary_target_lang}')
         processor = processors[task_name](args.binary_target_lang)
     else:
         processor = processors[task_name]()

@@ -41,8 +41,9 @@ python ./run_BERT_NLI.py \
   --do_eval \
   --data_dir $DATA_DIR \
   --bert_model bert-base-uncased \
-  --max_seq_length 128 \
+  --max_seq_length 512 \
   --train_batch_size 16 \
   --num_train_epochs 4 \
+  --binary_target_lang GER \
   --output_dir ./results/toefl/binary
 
