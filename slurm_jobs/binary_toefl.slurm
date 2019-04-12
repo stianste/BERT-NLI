@@ -34,16 +34,24 @@ pip install -r requirements.txt
 
 export DATA_DIR=./data/NLI-shared-task-2017/
 
-python ./run_BERT_NLI.py \
-  --task_name binary-toefl11 \
-  --do_lower_case \
-  --do_train \
-  --do_eval \
-  --data_dir $DATA_DIR \
-  --bert_model bert-base-uncased \
-  --max_seq_length 512 \
-  --train_batch_size 16 \
-  --num_train_epochs 4 \
-  --binary_target_lang GER \
-  --output_dir ./results/toefl/binary
+declare -a StringArray=( "HIN" "ARA" "JPN" "GER" "TEL" "KOR" "SPA" "ITA" "CHI" "FRE" "TUR" )
+ 
+# Iterate the string array using for loop
+for lang in ${StringArray[@]}; do
+  echo 'Training binary for language:'
+  echo $lang
+  python ./run_BERT_NLI.py \
+    --task_name binary-toefl11 \
+    --do_lower_case \
+    --do_train \
+    --do_eval \
+    --data_dir $DATA_DIR \
+    --bert_model bert-base-uncased \
+    --max_seq_length 512 \
+    --train_batch_size 16 \
+    --num_train_epochs 4 \
+    --binary_target_lang $lang \
+    --output_dir ./results/toefl/binary
+
+done
 
