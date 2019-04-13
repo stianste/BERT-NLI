@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import json
 import logging
 
@@ -28,12 +29,27 @@ def get_id2label(filepath):
 def get_examples_and_labels_from_map(data_map, id2label):
     data = [None for x in range(len(data_map))] 
     labels = [None for x in range(len(data_map))] 
+    guids = [None for x in range(len(data_map))]
 
     for i, guid in enumerate(sorted(data_map.keys())):
         data[i] = np.array(data_map[guid])
         labels[i] = id2label[guid]
+        guids[i] = guid
 
-    return data, labels
+    return data, labels, guids
+
+def save_csv(guids, y, outputs, probabilities, classes):
+    data_dict = {
+        "guid" : guids,
+        "input_label" : y,
+        "output_label" : outputs,
+    }
+    for i in range(len(classes)):
+        data_dict[classes[i]] = probabilities[:,i] # get the i-th class column
+
+    prediction_df = pd.DataFrame(data_dict)
+
+    prediction_df.to_csv('./common_predictions/ivec.csv', index=False)
 
 def main():
     training_path = './data/NLI-shared-task-2017/data/features/ivectors/train/ivectors.json'
@@ -46,12 +62,11 @@ def main():
     training_id2labels = get_id2label(training_labels_path)
 
     logger.info('Merging vectors and labels...')
-    X, y = get_examples_and_labels_from_map(training_data_map, training_id2labels)
+    X, y, _ = get_examples_and_labels_from_map(training_data_map, training_id2labels)
 
     logger.info('Training classifier')
     model = MLPClassifier(verbose=True)
     model.fit(X, y)
-
 
     logger.info('Loading dev data')
     dev_data_map = load_ivectors(dev_path)
@@ -59,14 +74,16 @@ def main():
     dev_data_map = load_ivectors(dev_path)
     dev_id2labels = get_id2label(dev_labels_path)
 
-    logger.info('Merging vectors and labels...')
-    X, y = get_examples_and_labels_from_map(dev_data_map, dev_id2labels)
-
     logger.info('Evaluating model')
+    X, y, dev_guids = get_examples_and_labels_from_map(dev_data_map, dev_id2labels)
+
+    outputs = model.predict(X)
+    probabilities = model.predict_proba(X)
+    classes = model.classes_
+
+    save_csv(dev_guids, y, outputs, probabilities, classes)
 
     eval_accuracy = model.score(X, y)
-
-    logger.info('***** Results *****')
     logger.info(f'Accuracy: {eval_accuracy:.3f}%')
 
 if __name__ == '__main__':

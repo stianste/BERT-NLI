@@ -173,6 +173,18 @@ def get_timestamp():
 def get_eval_folder_name(args):
     return f'seq_{args.max_seq_length}_batch_{args.train_batch_size }_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
 
+def save_csv(all_guids, all_inputs, all_outputs, all_predicted_logits, label_list, output_eval_file):
+    prediction_df = pd.DataFrame({
+        "guid" : all_guids,
+        "input" : all_inputs,
+        "output" : all_outputs,
+        "logit" : all_predicted_logits,
+        "input_label" : [label_list[int(i)] for i in all_inputs],
+        "output_label" : [label_list[int(i)] for i in all_outputs],
+    })
+
+    prediction_df.to_csv(f'{output_eval_file}.csv', index=False)
+
 def main():
     parser = argparse.ArgumentParser()
 
@@ -404,6 +416,7 @@ def main():
         if args.cross_validation_fold:
             logger.info(f'Cross validation fold: {args.cross_validation_fold}')
 
+        all_guids = [f.guid for f in train_features]
         all_input_ids = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in train_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in train_features], dtype=torch.long)
@@ -441,7 +454,6 @@ def main():
                     optimizer.zero_grad()
                     global_step += 1
 
-    # Save a trained model
     timestamp = get_timestamp()
     model_foldername = f'{timestamp}_seq_{args.max_seq_length}_batch_{args.train_batch_size }_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
     if args.binary_target_lang:
@@ -454,6 +466,33 @@ def main():
 
     os.mkdir(full_path)
 
+    # Save training data outputs for meta-classifiers
+    logger.info('Saving final training outputs')
+    all_inputs = np.array([])
+    all_outputs = np.array([])
+    all_predicted_logits = np.array([])
+
+    for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
+        batch = tuple(t.to(device) for t in batch)
+        input_ids, input_mask, segment_ids, label_ids = batch
+
+        with torch.no_grad():
+            logits = model(input_ids, segment_ids, input_mask)
+
+        logits = logits.detach().cpu().numpy()
+
+        outputs = np.argmax(logits, axis=1)
+        # Get the logit for each row in the batch
+        predicted_logits = np.amax(logits, axis=1)
+
+        all_inputs = np.append(all_inputs, label_ids)
+        all_outputs = np.append(all_outputs, outputs)
+        all_predicted_logits = np.append(all_predicted_logits, predicted_logits)
+
+    save_csv(all_guids, all_inputs, all_outputs, all_predicted_logits, label_list, full_path + 'training_output')
+
+
+    # Save a trained model
     if args.do_train:
         if args.cross_validation_fold:
             logger.info('Cross validation is used, so no model is saved.')
@@ -595,16 +634,7 @@ def main():
                 logger.info("  %s = %s", key, str(result[key]))
                 writer.write("%s = %s\n" % (key, str(result[key])))
 
-        prediction_df = pd.DataFrame({
-            "guid" : all_guids,
-            "input" : all_inputs,
-            "output" : all_outputs,
-            "logit" : all_predicted_logits,
-            "input_label" : [label_list[int(i)] for i in all_inputs],
-            "output_label" : [label_list[int(i)] for i in all_outputs],
-        })
-
-        prediction_df.to_csv(f'{output_eval_file}.csv', index=False)
+        save_csv(all_guids, all_inputs, all_outputs, all_predicted_logits, label_list, output_eval_file)
 
 if __name__ == "__main__":
     main()
