@@ -578,6 +578,9 @@ def main():
         else:
             timestamp = get_timestamp()
             eval_filename = f'{timestamp}_acc{eval_accuracy:.3f}_seq_{args.max_seq_length}_batch_{args.train_batch_size }_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
+            if args.binary_target_lang:
+                eval_filename = args.binary_target_lang + '_' + eval_filename
+
             output_eval_file = os.path.join(args.output_dir, f'{eval_filename}')
 
             # plot_confusion_matrix(all_inputs, all_outputs, classes=label_list, normalize=True,
@@ -585,9 +588,6 @@ def main():
             # np.set_printoptions(precision=2)
             # plt.savefig(f'./out/confusion_matrices/{args.bert_model}_{eval_filename}.png')
 
-
-        if args.binary_target_lang:
-            model_foldername = args.binary_target_lang + '_' + model_foldername
 
         with open(output_eval_file + '.txt', "w") as writer:
             logger.info("***** Eval results *****")
