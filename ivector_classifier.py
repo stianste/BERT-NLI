@@ -72,7 +72,7 @@ def main():
     training_outputs = model.predict(X)
     training_probas = model.predict_proba(X)
 
-    save_csv(training_guids, y, training_outputs, training_probas, classes, 'ivec_train')
+    save_csv(training_guids, y, training_outputs, training_probas, classes, 'train-ivec')
 
     logger.info('Loading dev data')
     dev_data_map = load_ivectors(dev_path)
@@ -86,7 +86,7 @@ def main():
     outputs = model.predict(X)
     probabilities = model.predict_proba(X)
 
-    save_csv(dev_guids, y, outputs, probabilities, classes, 'ivec_dev')
+    save_csv(dev_guids, y, outputs, probabilities, classes, 'dev-ivec')
 
     eval_accuracy = model.score(X, y)
     logger.info(f'Accuracy: {eval_accuracy:.3f}%')

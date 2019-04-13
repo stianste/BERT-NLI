@@ -114,6 +114,7 @@ venv.bak/
 *.json
 /outputs/
 *_models/
+/temp
 
 # vscode
 .vscode/
