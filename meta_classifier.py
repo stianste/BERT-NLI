@@ -3,6 +3,8 @@ import numpy as np
 
 from data_processors import TOEFL11Processor
 from sklearn.neural_network import MLPClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
 
 def get_vectors(type_prefix):
     data_dir = './common_predictions'
@@ -16,25 +18,29 @@ def get_vectors(type_prefix):
 
     bert_df = pd.get_dummies(bert_df, columns=['output_label'])
 
-    bert_vectors = bert_df[['logit'] + [f'output_label_{lang}' for lang in labels]].values
-    ivec_vectors = ivec_df[labels].values
+    combined_df = pd.merge(bert_df, ivec_df, on=['guid'])
+    combined_df.to_csv(f'./temp/{type_prefix}_merged.csv', index=False)
 
-    X = np.concatenate((bert_vectors, ivec_vectors), axis=1)
-    y = bert_df['input_label'].values # Same as ivec after sorting
+    # Keep logit, dummy variables from bert, and logits from ivec
+    columns = ['logit'] + labels + [f'output_label_{lang}' for lang in labels]
+
+    X = combined_df[columns].values
+    y = combined_df['input_label_x'].values
 
     return X, y
 
 def main():
-    X_train, y_train = get_vectors('train')
     X_dev, y_dev = get_vectors('dev')
+    X_train, y_train = get_vectors('train')
 
-    assert X_train.shape == (11000, 23)
+    assert X_train.shape == (11000, 23), f'Train shape: {X_train.shape}'
     assert y_train.shape == (11000,)
 
     assert X_dev.shape == (1100, 23)
     assert y_dev.shape == (1100,)
 
-    model = MLPClassifier(verbose=True)
+    # model = MLPClassifier(verbose=True, max_iter=500)
+    model = DecisionTreeClassifier()
     model.fit(X_train, y_train)
     eval_acc = model.score(X_dev, y_dev)
 
