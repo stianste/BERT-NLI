@@ -38,7 +38,7 @@ def get_examples_and_labels_from_map(data_map, id2label):
 
     return data, labels, guids
 
-def save_csv(guids, y, outputs, probabilities, classes):
+def save_csv(guids, y, outputs, probabilities, classes, filename):
     data_dict = {
         "guid" : guids,
         "input_label" : y,
@@ -49,7 +49,7 @@ def save_csv(guids, y, outputs, probabilities, classes):
 
     prediction_df = pd.DataFrame(data_dict)
 
-    prediction_df.to_csv('./common_predictions/ivec.csv', index=False)
+    prediction_df.to_csv(f'./common_predictions/{filename}.csv', index=False)
 
 def main():
     training_path = './data/NLI-shared-task-2017/data/features/ivectors/train/ivectors.json'
@@ -62,11 +62,17 @@ def main():
     training_id2labels = get_id2label(training_labels_path)
 
     logger.info('Merging vectors and labels...')
-    X, y, _ = get_examples_and_labels_from_map(training_data_map, training_id2labels)
+    X, y, training_guids = get_examples_and_labels_from_map(training_data_map, training_id2labels)
 
     logger.info('Training classifier')
     model = MLPClassifier(verbose=True)
     model.fit(X, y)
+    classes = model.classes_
+
+    training_outputs = model.predict(X)
+    training_probas = model.predict_proba(X)
+
+    save_csv(training_guids, y, training_outputs, training_probas, classes, 'ivec_train')
 
     logger.info('Loading dev data')
     dev_data_map = load_ivectors(dev_path)
@@ -79,9 +85,8 @@ def main():
 
     outputs = model.predict(X)
     probabilities = model.predict_proba(X)
-    classes = model.classes_
 
-    save_csv(dev_guids, y, outputs, probabilities, classes)
+    save_csv(dev_guids, y, outputs, probabilities, classes, 'ivec_dev')
 
     eval_accuracy = model.score(X, y)
     logger.info(f'Accuracy: {eval_accuracy:.3f}%')
