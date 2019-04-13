@@ -480,16 +480,17 @@ def main():
             logits = model(input_ids, segment_ids, input_mask)
 
         logits = logits.detach().cpu().numpy()
+        label_ids = label_ids.detach().cpu().numpy()
 
         outputs = np.argmax(logits, axis=1)
-        # Get the logit for each row in the batch
+
         predicted_logits = np.amax(logits, axis=1)
 
         all_inputs = np.append(all_inputs, label_ids)
         all_outputs = np.append(all_outputs, outputs)
         all_predicted_logits = np.append(all_predicted_logits, predicted_logits)
 
-    save_csv(all_guids, all_inputs, all_outputs, all_predicted_logits, label_list, full_path + 'training_output')
+    save_csv(all_guids, all_inputs, all_outputs, all_predicted_logits, label_list, full_path + '_train')
 
 
     # Save a trained model
