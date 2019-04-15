@@ -384,10 +384,11 @@ class CommonLabelsReddit2TOEFL11Processor(DataProcessor):
                 for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
                     full_path = f'{data_dir}/{language_folder}/{username}/{chunk}'
                     with open(full_path, 'r') as f:
-                        text = ''.join(f.readlines()).lower()
-                        examples.append(
-                            InputExample(guid=f'{username}_{chunk}', text_a=text, label=language)
-                        )
+                        sub_chunks = split_text_chunk_lines(f.readlines().lower())
+                        for i, sub_chunk in enumerate(sub_chunks):
+                            examples.append(
+                                InputExample(guid=f'{username}_{chunk}', text_a=sub_chunk, label=language)
+                            )
 
         return examples
 
