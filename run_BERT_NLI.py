@@ -461,10 +461,11 @@ def main():
 
     full_path = f'{args.output_dir}/{model_foldername}'
 
-    if not os.path.isdir(args.output_dir):
-        os.mkdir(args.output_dir)
+    if not args.cross_validation_fold:
+        if not os.path.isdir(args.output_dir):
+            os.mkdir(args.output_dir)
 
-    os.mkdir(full_path)
+        os.mkdir(full_path)
 
     # Save training data outputs for meta-classifiers
     logger.info('Saving final training outputs')
@@ -490,7 +491,8 @@ def main():
         all_outputs = np.append(all_outputs, outputs)
         all_predicted_logits = np.append(all_predicted_logits, predicted_logits)
 
-    save_csv(all_guids, all_inputs, all_outputs, all_predicted_logits, label_list, full_path + '_train')
+    csv_filename = full_path + '_train_' + f'fold_{args.cross_validation_fold}'
+    save_csv(all_guids, all_inputs, all_outputs, all_predicted_logits, label_list, csv_filename)
 
 
     # Save a trained model
