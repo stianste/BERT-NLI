@@ -5,6 +5,24 @@ from collections import defaultdict
 
 from typing import List
 
+def split_text_chunk_lines(text_lines, max_seq_len=512):
+    '''
+    Naivley splits a reddit text chunk into multiple text chunks of size ~512 tokens
+    '''
+    chunks = []
+    sentence_words = []
+    for sentence in text_lines:
+        words = sentence.split()
+        if len(sentence_words) + len(words) > max_seq_len:
+            chunks.append(' '.join(sentence_words))
+            sentence_words = []
+
+        sentence_words += words
+
+    chunks.append(' '.join(sentence_words))
+    return chunks
+
+
 class InputExample(object):
     """A single training/test example for simple sequence classification."""
 
@@ -155,26 +173,15 @@ class RedditInDomainDataProcessor(DataProcessor):
                 for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
                     full_path = f'{data_dir}/{language_folder}/{username}/{chunk}' 
                     with open(full_path, 'r') as f:
-                        text = ''.join(f.readlines()).lower()
+                        chunks = split_text_chunk_lines(f.readlines().lower(), tokenizer)
 
-                        user_examples.append(
-                            InputExample(guid=f'{username}_{chunk}', text_a=text, label=language)
-                        )
+                        for i, chunk in enumerate(chunks):
+                            user_examples.append(
+                                InputExample(guid=f'{username}_{chunk}_{i}', text_a=chunk, label=language)
+                            )
 
                 self.user2examples[username] = user_examples
 
-        user_has_more_than_one_chunk = False
-
-        # Make sure everything is in order
-        for username, example_list in self.user2examples.items():
-            num_examples = len(example_list)
-
-            if num_examples > 1:
-                user_has_more_than_one_chunk = True
-
-        if not user_has_more_than_one_chunk:
-            print('All users have only one example/chunk')
-             
         for language, user_list in self.lang2usernames.items():
             assert len(user_list) == 104, f'{language} has {len(user_list)} users.'
 
@@ -279,16 +286,14 @@ class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
         self.non_europe_usernames = set()
         self.lang2usernames = defaultdict(list)
 
-    def verify_users(self, data_dir: str) -> set:
-        europe_users = set()
+    def fill_users(self, data_dir: str) -> set:
         for language_folder in os.listdir(data_dir + '/europe_data'):
             for username in os.listdir(f'{data_dir}/{language_folder}'):
-                europe_users.add(username)
+                self.europe_usernames.add(username)
 
-        non_europe_users = set()
         for language_folder in os.listdir(data_dir + '/non_europe_data'):
             for username in os.listdir(f'{data_dir}/{language_folder}'):
-                non_europe_users.add(username)
+                self.non_europe_usernames.add(username)
 
 
     def discover_examples(self, data_dir: str, is_europe=True)-> None:
@@ -300,11 +305,12 @@ class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
                 for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
                     full_path = f'{data_dir}/{language_folder}/{username}/{chunk}'
                     with open(full_path, 'r') as f:
-                        text = ''.join(f.readlines()).lower()
+                        sub_chunks = split_text_chunk_lines(f.readlines().lower())
 
-                        user_examples.append(
-                            InputExample(guid=f'{username}_{chunk}', text_a=text, label=language)
-                        )
+                        for i, sub_chunk in enumerate(sub_chunks):
+                            user_examples.append(
+                                InputExample(guid=f'{username}_{chunk}_{i}', text_a=sub_chunk, label=language)
+                            )
 
                 if is_europe:
                     self.europe_user2examples[username] = user_examples
@@ -314,13 +320,13 @@ class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
     def get_train_examples(self, data_dir: str) -> List[InputExample]:
         self.discover_examples(data_dir + '/europe_data')
         self.discover_examples(data_dir + '/non_europe_data', is_europe=False)
-        self.verify_users(data_dir)
+        self.fill_users(data_dir)
 
         for usernames in self.lang2usernames.values():
             num_europe_users = int(len(usernames) * 0.9)
             europe_users = random.sample(list(usernames), num_europe_users)
-            self.europe_usernames = self.europe_usernames.union(europe_users)
-            self.non_europe_usernames = self.non_europe_usernames.union(usernames.difference(europe_users))
+            self.europe_usernames = self.europe_usernames.intersection(europe_users)
+            self.non_europe_usernames = self.non_europe_usernames.intersection(usernames.difference(europe_users))
 
         examples = [None for x in range(len(self.europe_usernames))]
         for i, username in enumerate(self.europe_usernames):
