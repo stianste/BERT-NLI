@@ -33,12 +33,12 @@ pip install -r requirements.txt
 
 export DATA_DIR=./data/RedditL2/reddit_downsampled
 
-export MAX_SEQ_LENGTH=128
+export MAX_SEQ_LENGTH=512
 export TRAIN_BATCH_SIZE=16
-export LEARNING_RATE=2e-5
+export LEARNING_RATE=5e-5
 export NUM_TRAIN_EPOCHS=5
 export K=10
-export OUTPUT_DIR=./reddit_results/out_of_domain
+export OUTPUT_DIR=./results/reddit/out-of-domain
 
 #!/bin/bash
 for i in $(seq 1 $K)
@@ -49,14 +49,13 @@ do
     --do_eval \
     --do_lower_case \
     --data_dir $DATA_DIR \
-    --bert_model bert-large-uncased \
+    --bert_model bert-base-uncased \
     --max_seq_length $MAX_SEQ_LENGTH \
     --train_batch_size $TRAIN_BATCH_SIZE \
     --eval_batch_size 8 \
     --learning_rate $LEARNING_RATE \
     --num_train_epochs $NUM_TRAIN_EPOCHS \
-    --output_dir $OUTPUT_DIR \
-    --cross_validation_fold $i
+    --output_dir $OUTPUT_DIR
 done
 
 python -m scripts.join_cross_validation_results \
