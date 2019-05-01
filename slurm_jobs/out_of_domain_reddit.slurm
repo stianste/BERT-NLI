@@ -5,7 +5,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
 #SBATCH --mem=64000
-#SBATCH --job-name="Reddit-out-of-domain"
+#SBATCH --job-name="out-of-domain"
 #SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/out_of_domain_reddit.out
 #SBATCH --mail-user=stianste@stud.ntnu.no
 #SBATCH --mail-type=ALL

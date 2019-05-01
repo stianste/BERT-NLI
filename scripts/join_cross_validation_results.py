@@ -53,6 +53,9 @@ else:
 results = defaultdict(float)
 
 for fold_result_file in os.listdir(full_path):
+    if fold_result_file[-4:] != '.txt':
+        continue
+
     with open(os.path.join(full_path, fold_result_file), 'r') as f:
         for line in f.readlines():
             key, _, value = line.split()

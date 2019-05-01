@@ -2,7 +2,7 @@
 
 #SBATCH --partition=EPICALL
 #SBATCH --gres=gpu:2
-#SBATCH --time=30:00:00
+#SBATCH --time=20:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
 #SBATCH --mem=64000
@@ -34,7 +34,7 @@ pip install -r requirements.txt
 
 export DATA_DIR=./data/NLI-shared-task-2017/
 
-echo "RUNNING ::: 3 base epochs"
+echo "RUNNING ::: 4 epoch experiments batchsize"
 python ./run_BERT_NLI.py \
   --task_name toefl11 \
   --do_lower_case \
@@ -42,25 +42,12 @@ python ./run_BERT_NLI.py \
   --do_eval \
   --data_dir $DATA_DIR \
   --bert_model bert-base-uncased \
-  --max_seq_length 128 \
+  --max_seq_length 512 \
   --train_batch_size 16 \
-  --num_train_epochs 3 \
-  --output_dir ./results/toefl/base
-
-echo "RUNNING ::: 4 base epochs"
-python ./run_BERT_NLI.py \
-  --task_name toefl11 \
-  --do_lower_case \
-  --do_train \
-  --do_eval \
-  --data_dir $DATA_DIR \
-  --bert_model bert-base-uncased \
-  --max_seq_length 128 \
-  --train_batch_size 16 \
+  --learning_rate 5e-5 \
   --num_train_epochs 4 \
   --output_dir ./results/toefl/base
 
-echo "RUNNING ::: 5 base epochs"
 python ./run_BERT_NLI.py \
   --task_name toefl11 \
   --do_lower_case \
@@ -68,99 +55,139 @@ python ./run_BERT_NLI.py \
   --do_eval \
   --data_dir $DATA_DIR \
   --bert_model bert-base-uncased \
-  --max_seq_length 128 \
-  --train_batch_size 16 \
-  --num_train_epochs 5 \
-  --output_dir ./results/toefl/base
-
-echo "RUNNING ::: 10 base epochs"
-python ./run_BERT_NLI.py \
-  --task_name toefl11 \
-  --do_lower_case \
-  --do_train \
-  --do_eval \
-  --data_dir $DATA_DIR \
-  --bert_model bert-base-uncased \
-  --max_seq_length 128 \
-  --train_batch_size 16 \
-  --num_train_epochs 10 \
-  --output_dir ./results/toefl/base
-
-echo "RUNNING ::: 20 base epochs"
-python ./run_BERT_NLI.py \
-  --task_name toefl11 \
-  --do_lower_case \
-  --do_train \
-  --do_eval \
-  --data_dir $DATA_DIR \
-  --bert_model bert-base-uncased \
-  --max_seq_length 128 \
-  --train_batch_size 16 \
-  --num_train_epochs 20 \
-  --output_dir ./results/toefl/base
-
-echo "RUNNING ::: 3 large epochs"
-python ./run_BERT_NLI.py \
-  --task_name toefl11 \
-  --do_lower_case \
-  --do_train \
-  --do_eval \
-  --data_dir $DATA_DIR \
-  --bert_model bert-large-uncased \
-  --max_seq_length 128 \
-  --train_batch_size 16 \
-  --num_train_epochs 3 \
-  --output_dir ./results/toefl/large
-
-echo "RUNNING ::: 4 large epochs"
-python ./run_BERT_NLI.py \
-  --task_name toefl11 \
-  --do_lower_case \
-  --do_train \
-  --do_eval \
-  --data_dir $DATA_DIR \
-  --bert_model bert-large-uncased \
-  --max_seq_length 128 \
-  --train_batch_size 16 \
+  --max_seq_length 512 \
+  --train_batch_size 32 \
+  --learning_rate 5e-5 \
   --num_train_epochs 4 \
-  --output_dir ./results/toefl/large
+  --output_dir ./results/toefl/base
 
-echo "RUNNING ::: 5 large epochs"
 python ./run_BERT_NLI.py \
   --task_name toefl11 \
   --do_lower_case \
   --do_train \
   --do_eval \
   --data_dir $DATA_DIR \
-  --bert_model bert-large-uncased \
-  --max_seq_length 128 \
+  --bert_model bert-base-uncased \
+  --max_seq_length 512 \
   --train_batch_size 16 \
-  --num_train_epochs 5 \
-  --output_dir ./results/toefl/large
+  --learning_rate 3e-5 \
+  --num_train_epochs 4 \
+  --output_dir ./results/toefl/base
 
-echo "RUNNING ::: 10 large epochs"
 python ./run_BERT_NLI.py \
   --task_name toefl11 \
   --do_lower_case \
   --do_train \
   --do_eval \
   --data_dir $DATA_DIR \
-  --bert_model bert-large-uncased \
-  --max_seq_length 128 \
-  --train_batch_size 16 \
-  --num_train_epochs 10 \
-  --output_dir ./results/toefl/large
+  --bert_model bert-base-uncased \
+  --max_seq_length 512 \
+  --train_batch_size 32 \
+  --learning_rate 3e-5 \
+  --num_train_epochs 4 \
+  --output_dir ./results/toefl/base
 
-echo "RUNNING ::: 20 large epochs"
 python ./run_BERT_NLI.py \
   --task_name toefl11 \
   --do_lower_case \
   --do_train \
   --do_eval \
   --data_dir $DATA_DIR \
-  --bert_model bert-large-uncased \
-  --max_seq_length 128 \
+  --bert_model bert-base-uncased \
+  --max_seq_length 512 \
   --train_batch_size 16 \
-  --num_train_epochs 20 \
-  --output_dir ./results/toefl/large
+  --learning_rate 2e-5 \
+  --num_train_epochs 4 \
+  --output_dir ./results/toefl/base
 
+python ./run_BERT_NLI.py \
+  --task_name toefl11 \
+  --do_lower_case \
+  --do_train \
+  --do_eval \
+  --data_dir $DATA_DIR \
+  --bert_model bert-base-uncased \
+  --max_seq_length 512 \
+  --train_batch_size 32 \
+  --learning_rate 2e-5 \
+  --num_train_epochs 4 \
+  --output_dir ./results/toefl/base
+
+echo "RUNNING ::: 3 epoch experiments batchsize"
+python ./run_BERT_NLI.py \
+  --task_name toefl11 \
+  --do_lower_case \
+  --do_train \
+  --do_eval \
+  --data_dir $DATA_DIR \
+  --bert_model bert-base-uncased \
+  --max_seq_length 512 \
+  --train_batch_size 16 \
+  --learning_rate 5e-5 \
+  --num_train_epochs 3 \
+  --output_dir ./results/toefl/base
+
+python ./run_BERT_NLI.py \
+  --task_name toefl11 \
+  --do_lower_case \
+  --do_train \
+  --do_eval \
+  --data_dir $DATA_DIR \
+  --bert_model bert-base-uncased \
+  --max_seq_length 512 \
+  --train_batch_size 32 \
+  --learning_rate 5e-5 \
+  --num_train_epochs 3 \
+  --output_dir ./results/toefl/base
+
+python ./run_BERT_NLI.py \
+  --task_name toefl11 \
+  --do_lower_case \
+  --do_train \
+  --do_eval \
+  --data_dir $DATA_DIR \
+  --bert_model bert-base-uncased \
+  --max_seq_length 512 \
+  --train_batch_size 16 \
+  --learning_rate 3e-5 \
+  --num_train_epochs 3 \
+  --output_dir ./results/toefl/base
+
+python ./run_BERT_NLI.py \
+  --task_name toefl11 \
+  --do_lower_case \
+  --do_train \
+  --do_eval \
+  --data_dir $DATA_DIR \
+  --bert_model bert-base-uncased \
+  --max_seq_length 512 \
+  --train_batch_size 32 \
+  --learning_rate 3e-5 \
+  --num_train_epochs 3 \
+  --output_dir ./results/toefl/base
+
+python ./run_BERT_NLI.py \
+  --task_name toefl11 \
+  --do_lower_case \
+  --do_train \
+  --do_eval \
+  --data_dir $DATA_DIR \
+  --bert_model bert-base-uncased \
+  --max_seq_length 512 \
+  --train_batch_size 16 \
+  --learning_rate 2e-5 \
+  --num_train_epochs 3 \
+  --output_dir ./results/toefl/base
+
+python ./run_BERT_NLI.py \
+  --task_name toefl11 \
+  --do_lower_case \
+  --do_train \
+  --do_eval \
+  --data_dir $DATA_DIR \
+  --bert_model bert-base-uncased \
+  --max_seq_length 512 \
+  --train_batch_size 32 \
+  --learning_rate 2e-5 \
+  --num_train_epochs 3 \
+  --output_dir ./results/toefl/base

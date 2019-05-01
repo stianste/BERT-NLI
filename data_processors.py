@@ -14,12 +14,12 @@ def split_text_chunk_lines(text_lines, max_seq_len=512):
     for sentence in text_lines:
         words = sentence.split()
         if len(sentence_words) + len(words) > max_seq_len:
-            chunks.append(' '.join(sentence_words))
+            chunks.append(' '.join([word.lower() for word in sentence_words]))
             sentence_words = []
 
         sentence_words += words
 
-    chunks.append(' '.join(sentence_words))
+    chunks.append(' '.join([word.lower() for word in sentence_words]))
     return chunks
 
 
@@ -173,11 +173,11 @@ class RedditInDomainDataProcessor(DataProcessor):
                 for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
                     full_path = f'{data_dir}/{language_folder}/{username}/{chunk}' 
                     with open(full_path, 'r') as f:
-                        chunks = split_text_chunk_lines(f.readlines().lower(), tokenizer)
+                        sub_chunks = split_text_chunk_lines(f.readlines())
 
-                        for i, chunk in enumerate(chunks):
+                        for i, sub_chunk in enumerate(sub_chunks):
                             user_examples.append(
-                                InputExample(guid=f'{username}_{chunk}_{i}', text_a=chunk, label=language)
+                                InputExample(guid=f'{username}_{chunk}_{i}', text_a=sub_chunk, label=language)
                             )
 
                 self.user2examples[username] = user_examples
@@ -305,7 +305,7 @@ class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
                 for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
                     full_path = f'{data_dir}/{language_folder}/{username}/{chunk}'
                     with open(full_path, 'r') as f:
-                        sub_chunks = split_text_chunk_lines(f.readlines().lower())
+                        sub_chunks = split_text_chunk_lines(f.readlines())
 
                         for i, sub_chunk in enumerate(sub_chunks):
                             user_examples.append(
@@ -384,7 +384,7 @@ class CommonLabelsReddit2TOEFL11Processor(DataProcessor):
                 for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
                     full_path = f'{data_dir}/{language_folder}/{username}/{chunk}'
                     with open(full_path, 'r') as f:
-                        sub_chunks = split_text_chunk_lines(f.readlines().lower())
+                        sub_chunks = split_text_chunk_lines(f.readlines())
                         for i, sub_chunk in enumerate(sub_chunks):
                             examples.append(
                                 InputExample(guid=f'{username}_{chunk}', text_a=sub_chunk, label=language)
