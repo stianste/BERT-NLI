@@ -183,7 +183,7 @@ class RedditInDomainDataProcessor(DataProcessor):
                 self.user2examples[username] = user_examples
 
         for language, user_list in self.lang2usernames.items():
-            assert len(user_list) == 104, f'{language} has {len(user_list)} users.'
+            assert len(set(user_list)) == 104, f'{language} has {len(user_list)} users.'
 
     def _get_examples_for_fold(self, fold_function):
         examples = []
@@ -198,6 +198,10 @@ class RedditInDomainDataProcessor(DataProcessor):
         return examples
 
     def get_train_examples(self, data_dir: str='./data/RedditL2/reddit_downsampled/europe_data') -> List[InputExample]:
+        '''
+        Beware when calling this function in succession. Running the function twice will rediscover
+        the examples and yield all examples twice.
+        '''
         self.discover_examples(data_dir)
         return self._get_examples_for_fold(self._get_train_fold)
 

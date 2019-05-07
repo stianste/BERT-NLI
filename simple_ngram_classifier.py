@@ -38,8 +38,9 @@ else:
 
     for k_fold in range(1, 11):
         data_proc = RedditInDomainDataProcessor(k_fold)
-        training_examples = [ex.text_a for ex in data_proc.get_train_examples()]
-        y_train = [ex.label for ex in data_proc.get_train_examples()]
+        training_input_examples = data_proc.get_train_examples()
+        training_examples = [ex.text_a for ex in training_input_examples]
+        y_train = [ex.label for ex in training_input_examples]
 
         test_examples = [ex.text_a for ex in data_proc.get_dev_examples()]
         y_test = [ex.label for ex in data_proc.get_dev_examples()]
