@@ -71,12 +71,12 @@ class TOEFL11Processor(DataProcessor):
     def __init__(self):
         self.id2label = {}
 
-    def get_train_examples(self, data_dir: str) -> List[InputExample]:
+    def get_train_examples(self, data_dir: str='./data/NLI-shared-task-2017/') -> List[InputExample]:
         full_path = data_dir + constants.TOEFL11_TRAINING_DATA_PATH
         self._create_labels(data_dir)
         return self._get_examples(full_path)
 
-    def get_dev_examples(self, data_dir):
+    def get_dev_examples(self, data_dir: str='./data/NLI-shared-task-2017/'):
         full_path = data_dir + constants.TOEFL11_DEV_DATA_PATH
         return self._get_examples(full_path)
 
@@ -197,11 +197,11 @@ class RedditInDomainDataProcessor(DataProcessor):
 
         return examples
 
-    def get_train_examples(self, data_dir: str) -> List[InputExample]:
+    def get_train_examples(self, data_dir: str='./data/RedditL2/reddit_downsampled/europe_data') -> List[InputExample]:
         self.discover_examples(data_dir)
         return self._get_examples_for_fold(self._get_train_fold)
 
-    def get_dev_examples(self, data_dir):
+    def get_dev_examples(self, data_dir: str='./data/RedditL2/reddit_downsampled/europe_data'):
         return self._get_examples_for_fold(self._get_dev_fold)
 
     def get_labels(self):
