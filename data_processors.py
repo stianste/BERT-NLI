@@ -289,6 +289,8 @@ class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
         self.europe_usernames = set()
         self.non_europe_usernames = set()
         self.lang2usernames = defaultdict(list)
+        self.indomain_users = set()
+        self.out_of_domain_users = set()
 
     def fill_users(self, data_dir: str) -> set:
         for language_folder in os.listdir(data_dir + '/europe_data'):
@@ -327,78 +329,24 @@ class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
         self.fill_users(data_dir)
 
         for usernames in self.lang2usernames.values():
-            num_europe_users = int(len(usernames) * 0.9)
-            europe_users = random.sample(list(usernames), num_europe_users)
-            self.europe_usernames = self.europe_usernames.intersection(europe_users)
-            self.non_europe_usernames = self.non_europe_usernames.intersection(usernames.difference(europe_users))
+            num_europe_users = int(len(usernames) * 0.9) # 90 percent of the users
+            in_domain_overlap = usernames.intersection(self.europe_usernames)
+            europe_users = random.sample(in_domain_overlap, num_europe_users)
+            self.indomain_users.add(europe_users)
+            self.out_of_domain_users.add(usernames.difference(europe_users))
 
-        examples = [None for x in range(len(self.europe_usernames))]
-        for i, username in enumerate(self.europe_usernames):
+        examples = []
+        for username in self.indomain_users:
             for example in self.europe_user2examples[username]:
-                examples[i] = example
+                examples.append(example)
 
         return examples
 
     def get_dev_examples(self, data_dir):
         # Assumes get_training_examples have already been run
-        examples = [None for x in range(len(self.non_europe_usernames))]
-        for i, username in enumerate(self.non_europe_usernames):
-            for example in self.non_europe_user2examples[username]:
-                examples[i] = example
-
-        return examples
-
-class CommonLabelsReddit2TOEFL11Processor(DataProcessor):
-    """
-    A large data processor which uses all the data available and tests on the toefl dev set.
-    """
-    def __init__(self):
-        self.toefl_processor = TOEFL11Processor()
-        self.reddit_processor = RedditInDomainDataProcessor(0)
-
-        self.reddit_labels_to_toefl = {
-            "Germany" : "GER",
-            "Spain" : "SPA",
-            "Italy" : "ITA",
-            "France" : "FRE",
-            "Turkey" : "TUR",
-        }
-
-    def get_train_examples(self, data_dir):
-        toefl_data_dir = './data/NLI-shared-task-2017/'
-        examples = self.toefl_processor.get_train_examples(toefl_data_dir)
-
-        # Reddit Europe data
-        examples += self._get_reddit_examples(data_dir + '/europe_data')
-        examples += self._get_reddit_examples(data_dir + '/non_europe_data')
-
-        return examples
-
-    def _get_reddit_examples(self, data_dir):
         examples = []
-        for language_folder in os.listdir(data_dir):
-            language = language_folder.split('.')[0]
-
-            if not language in self.reddit_labels_to_toefl:
-                continue
-
-            language = self.reddit_labels_to_toefl[language]
-
-            for username in os.listdir(f'{data_dir}/{language_folder}'):
-                for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
-                    full_path = f'{data_dir}/{language_folder}/{username}/{chunk}'
-                    with open(full_path, 'r') as f:
-                        sub_chunks = split_text_chunk_lines(f.readlines())
-                        for i, sub_chunk in enumerate(sub_chunks):
-                            examples.append(
-                                InputExample(guid=f'{username}_{chunk}', text_a=sub_chunk, label=language)
-                            )
+        for username in self.out_of_domain_users:
+            for example in self.non_europe_user2examples[username]:
+                examples.append(example)
 
         return examples
-
-    def get_dev_examples(self, _):
-        data_dir = './data/NLI-shared-task-2017/'
-        return self.toefl_processor.get_dev_examples(data_dir)
-
-    def get_labels(self):
-        return self.toefl_processor.get_labels()
