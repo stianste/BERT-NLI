@@ -2,30 +2,23 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 # Data for plotting
-epochs = [3, 4, 5, 10, 20]
-eval_loss = [
-       1.258,
-       1.423,
-       1.673,
-       2.177,
-       2.601
-]
-train_loss = [
-       0.405,
-       0.192,
-       0.067,
-       0.005,
-       0.002
-]
+learning_rates = [2e-5, 3e-5, 4e-5, 5e-5]
+epochs = ['3', '4', '5']
+accs_2 = [0.749, 0.760, 0.759]
+accs_3 = [0.746, 0.765, 0.777]
+accs_4 = [0.736, 0.760, 0.761]
+accs_5 = [0.734, 0.746, 0.765]
 
 fig, ax = plt.subplots()
-ax.plot(epochs, train_loss)
-ax.plot(epochs, eval_loss)
+ax.plot(epochs, accs_2)
+ax.plot(epochs, accs_3)
+ax.plot(epochs, accs_4)
+ax.plot(epochs, accs_5)
 
-ax.set(xlabel='Number of epochs', ylabel='Loss',
-       title='Training and evaluation loss per number of epochs')
+ax.set(xlabel='Number of epochs', ylabel='Accuracy',
+       title='Accuracies Obtained Over Epochs For Different Learning Rates.')
 
-plt.legend(['Training loss', 'Evaluation Loss'], loc='upper left')
+plt.legend(learning_rates, loc='upper left', title='Learning Rate')
 
-fig.savefig("plots/bert_base_loss.png")
+fig.savefig("plots/bert_base_accuracies.png")
 plt.show()
