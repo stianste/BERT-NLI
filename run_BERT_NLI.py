@@ -173,16 +173,17 @@ def get_eval_folder_name(args):
     return f'seq_{args.max_seq_length}_batch_{args.train_batch_size }_epochs_{args.num_train_epochs}_lr_{args.learning_rate}'
 
 def save_csv(all_guids, all_inputs, all_outputs, all_predicted_logits, label_list, output_eval_file):
-    prediction_df = pd.DataFrame({
+    prediction_dict = {
         "guid" : all_guids,
         "input" : all_inputs,
         "output" : all_outputs,
-        "logit" : all_predicted_logits,
         "input_label" : [label_list[int(i)] for i in all_inputs],
         "output_label" : [label_list[int(i)] for i in all_outputs],
-    })
+    }
+    for i in range(len(label_list)):
+        prediction_dict[label_list[i]] = all_predicted_logits[i]
 
-    prediction_df.to_csv(f'{output_eval_file}.csv', index=False)
+    pd.DataFrame(prediction_dict).to_csv(f'{output_eval_file}.csv', index=False)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -556,7 +557,7 @@ def main():
 
         all_inputs = np.array([])
         all_outputs = np.array([])
-        all_predicted_logits = np.array([])
+        all_predicted_logits = np.array([[]])
  
         for input_ids, input_mask, segment_ids, label_ids in tqdm(eval_dataloader, desc="Evaluating"):
             input_ids = input_ids.to(device)
@@ -572,8 +573,6 @@ def main():
             label_ids = label_ids.to('cpu').numpy()
 
             outputs = np.argmax(logits, axis=1)
-            # Get the logit for each row in the batch
-            predicted_logits = np.amax(logits, axis=1)
 
             if False:
                 logger.info('Predicted langs:')
@@ -583,7 +582,7 @@ def main():
 
             all_inputs = np.append(all_inputs, label_ids)
             all_outputs = np.append(all_outputs, outputs)
-            all_predicted_logits = np.append(all_predicted_logits, predicted_logits)
+            all_predicted_logits = np.concatenate(all_predicted_logits, logits, axis=0)
 
             tmp_eval_accuracy = accuracy(logits, label_ids)
 
@@ -634,7 +633,7 @@ def main():
                 logger.info("  %s = %s", key, str(result[key]))
                 writer.write("%s = %s\n" % (key, str(result[key])))
 
-        save_csv(all_guids, all_inputs, all_outputs, all_predicted_logits, label_list, output_eval_file)
+        save_csv(all_guids, all_inputs, all_outputs, all_predicted_logits.T, label_list, output_eval_file)
 
 if __name__ == "__main__":
     main()
