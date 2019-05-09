@@ -325,7 +325,7 @@ class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
                 else:
                     self.non_europe_user2examples[username] = user_examples
 
-    def get_train_examples(self, data_dir: str) -> List[InputExample]:
+    def get_train_examples(self, data_dir: str='./data/RedditL2/reddit_downsampled/europe_data') -> List[InputExample]:
         self.discover_examples(data_dir + '/europe_data')
         self.discover_examples(data_dir + '/non_europe_data', is_europe=False)
         self.fill_users(data_dir)
@@ -345,7 +345,7 @@ class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
 
         return examples
 
-    def get_dev_examples(self, data_dir):
+    def get_dev_examples(self, data_dir: str=''):
         # Assumes get_training_examples have already been run
         examples = []
         for username in self.out_of_domain_users:

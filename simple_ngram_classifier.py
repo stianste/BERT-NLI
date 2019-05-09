@@ -1,4 +1,4 @@
-from data_processors import TOEFL11Processor, RedditInDomainDataProcessor
+from data_processors import TOEFL11Processor, RedditInDomainDataProcessor, RedditOutOfDomainDataProcessor
 from sklearn.neural_network import MLPClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import SVC
@@ -43,7 +43,7 @@ else:
     accuracies = []
 
     for k_fold in range(1, 11):
-        data_proc = RedditInDomainDataProcessor(k_fold)
+        data_proc = RedditOutOfDomainDataProcessor(k_fold)
         training_input_examples = data_proc.get_train_examples()
         training_examples = [ex.text_a for ex in training_input_examples]
         y_train = [ex.label for ex in training_input_examples]
