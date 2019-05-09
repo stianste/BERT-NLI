@@ -2,6 +2,7 @@ from data_processors import TOEFL11Processor, RedditInDomainDataProcessor
 from sklearn.neural_network import MLPClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import SVC
+from sklearn.pipeline import Pipeline
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 
@@ -12,6 +13,19 @@ analyzer = 'word' # Can also be 'word'
 
 reddit = True
 
+def train_and_evaluate_pipeline_for_model(model):
+    pipeline = Pipeline([
+        ('tf-idf', TfidfVectorizer(max_features=max_features, ngram_range=ngram_range, analyzer=analyzer)),
+        model 
+    ])
+
+    pipeline.fit(training_examples, y_train)
+
+    eval_acc = pipeline.score(test_examples, y_test)
+    
+    print(f'Eval accuracy {eval_acc}')
+    return eval_acc
+
 if not reddit:
     data_proc = TOEFL11Processor()
     training_examples = [ex.text_a for ex in data_proc.get_train_examples()]
@@ -20,18 +34,10 @@ if not reddit:
     test_examples = [ex.text_a for ex in data_proc.get_dev_examples()]
     y_test = [ex.label for ex in data_proc.get_dev_examples()]
 
-    vectorizer = TfidfVectorizer(max_features=max_features, ngram_range=ngram_range, analyzer=analyzer)
-    normalized_examples = vectorizer.fit_transform(training_examples + test_examples)
-    X_train = normalized_examples[:11000]
-    X_test = normalized_examples[11000:]
+    model = ('svm', SVC(verbose=True, kernel='linear', cache_size=2048, decision_function_shape=dec_func_shape))
+    # model = ('naive-bayes', MultinomialNB())
 
-    # model = SVC(verbose=True, kernel='linear', cache_size=2048, decision_function_shape=dec_func_shape)
-    # model = MLPClassifier(verbose=True)
-    model = MultinomialNB()
-    model.fit(X_train, y_train)
-
-    eval_acc = model.score(X_test, y_test)
-    print('Accuracy:', eval_acc)
+    train_and_evaluate_pipeline_for_model(model)
 
 else:
     accuracies = []
@@ -45,19 +51,10 @@ else:
         test_examples = [ex.text_a for ex in data_proc.get_dev_examples()]
         y_test = [ex.label for ex in data_proc.get_dev_examples()]
 
-        vectorizer = TfidfVectorizer(max_features=max_features, ngram_range=ngram_range, analyzer=analyzer)
-        normalized_examples = vectorizer.fit_transform(training_examples + test_examples)
-        X_train = normalized_examples[:len(training_examples)]
-        X_test = normalized_examples[len(training_examples):]
+        # model = ('svm', SVC(verbose=True, kernel='linear', cache_size=2048, decision_function_shape=dec_func_shape))
+        model = ('naive-bayes', MultinomialNB())
 
-        # model = SVC(verbose=True, kernel='linear', cache_size=2048, decision_function_shape=dec_func_shape)
-        # model = MLPClassifier(verbose=True)
-        model = MultinomialNB()
-        model.fit(X_train, y_train)
-
-        eval_acc = model.score(X_test, y_test)
-        print('Accuracy:', eval_acc)
-
+        eval_acc = train_and_evaluate_pipeline_for_model(model)
         accuracies.append(eval_acc)
 
     print('Average over 10 folds', sum(accuracies)/len(accuracies))
