@@ -293,12 +293,14 @@ class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
         self.out_of_domain_users = set()
 
     def fill_users(self, data_dir: str) -> set:
-        for language_folder in os.listdir(data_dir + '/europe_data'):
-            for username in os.listdir(f'{data_dir}/{language_folder}'):
+        suffix = '/europe_data'
+        for language_folder in os.listdir(data_dir + suffix):
+            for username in os.listdir(f'{data_dir}/{suffix}/{language_folder}'):
                 self.europe_usernames.add(username)
 
-        for language_folder in os.listdir(data_dir + '/non_europe_data'):
-            for username in os.listdir(f'{data_dir}/{language_folder}'):
+        suffix = '/non_europe_data'
+        for language_folder in os.listdir(data_dir + suffix):
+            for username in os.listdir(f'{data_dir}/{suffix}/{language_folder}'):
                 self.non_europe_usernames.add(username)
 
 
@@ -330,10 +332,10 @@ class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
 
         for usernames in self.lang2usernames.values():
             num_europe_users = int(len(usernames) * 0.9) # 90 percent of the users
-            in_domain_overlap = usernames.intersection(self.europe_usernames)
+            in_domain_overlap = set(usernames).intersection(self.europe_usernames)
             europe_users = random.sample(in_domain_overlap, num_europe_users)
             self.indomain_users.add(europe_users)
-            self.out_of_domain_users.add(usernames.difference(europe_users))
+            self.out_of_domain_users.add(set(usernames).difference(europe_users))
 
         examples = []
         for username in self.indomain_users:

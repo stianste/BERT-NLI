@@ -283,7 +283,6 @@ def main():
 
     processors = {
         "toefl11": TOEFL11Processor,
-        "binary-toefl11": BinaryTOEFL11Processor,
         "redditl2": RedditInDomainDataProcessor,
         "out-of-domain-redditl2": RedditOutOfDomainDataProcessor,
     }
