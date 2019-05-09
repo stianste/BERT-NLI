@@ -331,11 +331,12 @@ class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
         self.fill_users(data_dir)
 
         for usernames in self.lang2usernames.values():
-            num_europe_users = int(len(usernames) * 0.9) # 90 percent of the users
-            in_domain_overlap = set(usernames).intersection(self.europe_usernames)
-            europe_users = random.sample(in_domain_overlap, num_europe_users)
-            self.indomain_users.add(europe_users)
-            self.out_of_domain_users.add(set(usernames).difference(europe_users))
+            num_out_of_domain_users = int(len(usernames) * 0.1) # 10 percent of the users for testing
+            out_of_domain_overlap = set(usernames).intersection(self.non_europe_usernames)
+            non_europe_users = random.sample(out_of_domain_overlap, num_out_of_domain_users)
+            self.out_of_domain_users.add(non_europe_users)
+            # Use the ramaining possible users for training
+            self.indomain_users.add(set(usernames).difference(non_europe_users))
 
         examples = []
         for username in self.indomain_users:
