@@ -22,6 +22,7 @@ from data_processors import (
     TOEFL11Processor,
     RedditInDomainDataProcessor,
     RedditOutOfDomainDataProcessor,
+    AllOfRedditDataProcessor,
 )
 
 from pytorch_pretrained_bert.tokenization import BertTokenizer
@@ -285,14 +286,14 @@ def main():
         "toefl11": TOEFL11Processor,
         "redditl2": RedditInDomainDataProcessor,
         "out-of-domain-redditl2": RedditOutOfDomainDataProcessor,
+        "all-of-reddit": AllOfRedditDataProcessor,
     }
 
     num_labels_task = {
         "toefl11": 11,
-        "binary-toefl11": 2,
         "redditl2": 23,
         "out-of-domain-redditl2": 23,
-        "reddit2toefl": 11,
+        "all-of-reddit": 23,
     }
 
     if args.local_rank == -1 or args.no_cuda:

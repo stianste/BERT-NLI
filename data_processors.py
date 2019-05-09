@@ -163,6 +163,38 @@ class RedditInDomainDataProcessor(DataProcessor):
         self.fold_number = fold_number - 1
         self.user2examples = {}
         self.lang2usernames = defaultdict(list)
+        self.label2language = {
+            "Austria" : "German",
+            "Germany" : "German",
+            "Australia" : "English",
+            "Ireland" : "English",
+            "NewZealand" : "English",
+            "UK" : "English",
+            "US" : "English",
+            "Bulgaria" : "Bulgarian",
+            "Croatia" : "Croatian",
+            "Czech" : "Czech",
+            "Estonia" : "Estonian",
+            "Finland" : "Finish",
+            "France" : "French",
+            "Greece" : "Greek",
+            "Hungary" : "Hungarian",
+            "Italy" : "Italian",
+            "Lithuania" : "Lithuanian",
+            "Netherlands" : "Dutch",
+            "Norway" : "Norwegian",
+            "Poland" : "Polish",
+            "Portugal" : "Portuguese",
+            "Romania" : "Romanian",
+            "Russia" : "Russian",
+            "Serbia" : "Serbian",
+            "Slovenia" : "Slovenian",
+            "Spain" : "Spanish",
+            "Mexico" : "Spanish",
+            "Sweden" : "Swedish",
+            "Turkey" : "Turkish",
+        }
+
 
     def discover_examples(self, data_dir: str)-> None:
         for language_folder in os.listdir(data_dir):
@@ -209,38 +241,6 @@ class RedditInDomainDataProcessor(DataProcessor):
         return self._get_examples_for_fold(self._get_dev_fold)
 
     def get_labels(self):
-        label2language = {
-            "Austria" : "German",
-            "Germany" : "German",
-            "Australia" : "English",
-            "Ireland" : "English",
-            "NewZealand" : "English",
-            "UK" : "English",
-            "US" : "English",
-            "Bulgaria" : "Bulgarian",
-            "Croatia" : "Croatian",
-            "Czech" : "Czech",
-            "Estonia" : "Estonian",
-            "Finland" : "Finish",
-            "France" : "French",
-            "Greece" : "Greek",
-            "Hungary" : "Hungarian",
-            "Italy" : "Italian",
-            "Lithuania" : "Lithuanian",
-            "Netherlands" : "Dutch",
-            "Norway" : "Norwegian",
-            "Poland" : "Polish",
-            "Portugal" : "Portuguese",
-            "Romania" : "Romanian",
-            "Russia" : "Russian",
-            "Serbia" : "Serbian",
-            "Slovenia" : "Slovenian",
-            "Spain" : "Spanish",
-            "Mexico" : "Spanish",
-            "Sweden" : "Swedish",
-            "Turkey" : "Turkish",
-        }
-
         labels = list(set([
             "Australia",
             "Austria",
@@ -274,9 +274,9 @@ class RedditInDomainDataProcessor(DataProcessor):
         ]))
 
         for label in labels:
-            assert label in label2language
+            assert label in self.label2language
 
-        language_list = list(set(label2language.values()))
+        language_list = list(set(self.label2language.values()))
         assert len(language_list) == 23
         return sorted(language_list)
 
@@ -353,3 +353,44 @@ class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
                 examples.append(example)
 
         return examples
+
+class AllOfRedditDataProcessor(RedditInDomainDataProcessor):
+    def __init__(self, fold_number):
+        self.fold_number = fold_number - 1
+        self.examples = []
+        self.fold_size = -1
+
+    def merge_domains(self, europe_examples, non_europe_examples):
+        ''' Do a simple random combination of the two domains for now '''
+        return random.shuffle(europe_examples + non_europe_examples)
+
+    def get_train_examples(self, data_dir: str='./data/RedditL2/text_chunks') -> List[InputExample]:
+        europe_examples = self.discover_examples(data_dir + '/europe_data')
+        non_europe_examples = self.discover_examples(data_dir + '/non_europe_data')
+
+        self.examples = self.merge_domains(europe_examples, non_europe_examples)
+        self.fold_size = len(self.examples) // 10
+
+        return self._get_train_fold(self.examples, self.fold_number, self.fold_size)
+
+    def get_dev_examples(self, data_dir: str='./data/RedditL2/text_chunks'):
+        ''' Assumes get_train_examples has already been run '''
+        return self._get_dev_fold(self.examples, self.fold_number, self.fold_size)
+
+    def discover_examples(self, data_dir: str):
+        for language_folder in os.listdir(data_dir):
+            language = self.label2language[language_folder.split('.')[1]]
+
+            examples = []
+            for username in os.listdir(f'{data_dir}/{language_folder}'):
+                for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
+                    full_path = f'{data_dir}/{language_folder}/{username}/{chunk}' 
+                    with open(full_path, 'r') as f:
+                        sub_chunks = split_text_chunk_lines(f.readlines())
+
+                        for i, sub_chunk in enumerate(sub_chunks):
+                            examples.append(
+                                InputExample(guid=f'{username}_{chunk}_{i}', text_a=sub_chunk, label=language)
+                            )
+        return examples
+
