@@ -421,7 +421,7 @@ def main():
         all_label_ids = torch.tensor([f.label_id for f in train_features], dtype=torch.long)
         train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
         if args.local_rank == -1:
-            train_sampler = RandomSampler(train_data)
+            train_sampler = SequentialSampler(train_data)
         else:
             train_sampler = DistributedSampler(train_data)
 
@@ -468,9 +468,9 @@ def main():
     # Save training data outputs for meta-classifiers
     logger.info('Saving final training outputs')
 
-    num_train_examples = len(train_dataloader)
-    all_inputs = np.zeros((num_train_examples, 1))
-    all_outputs = np.zeros((num_train_examples, 1))
+    num_train_examples = len(train_data)
+    all_inputs = np.zeros((num_train_examples))
+    all_outputs = np.zeros((num_train_examples))
     all_predicted_logits = np.zeros((num_train_examples, len(label_list)))
     data_idx = 0
 
@@ -557,9 +557,9 @@ def main():
         eval_loss, eval_accuracy = 0, 0
         nb_eval_steps, nb_eval_examples = 0, 0
 
-        num_eval_examples = len(eval_dataloader)
-        all_inputs = np.zeros((num_eval_examples, 1))
-        all_outputs = np.zeros((num_eval_examples, 1))
+        num_eval_examples = len(eval_data)
+        all_inputs = np.zeros((num_eval_examples))
+        all_outputs = np.zeros((num_eval_examples))
         all_predicted_logits = np.zeros((num_eval_examples, len(label_list)))
         data_idx = 0
  
