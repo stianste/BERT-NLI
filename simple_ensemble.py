@@ -6,7 +6,7 @@ from data_processors import TOEFL11Processor, RedditInDomainDataProcessor
 
 from sklearn.svm import SVC
 from sklearn.pipeline import Pipeline
-from sklearn.ensemble import VotingClassifier
+from sklearn.ensemble import VotingClassifier, BaggingClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.base import TransformerMixin
 from sklearn.neural_network import MLPClassifier
@@ -64,7 +64,7 @@ def get_toefl_data():
 
 def main():
     max_features = 10000
-    stack_type = 'meta_classifier' # 'simple_ensemble', 'meta_classifier', 'meta_ensemble'
+    stack_type = '' # 'simple_ensemble', 'meta_classifier', 'meta_ensemble'
     mem_path = './common_predictions/cache'
     predictions_path = './common_predictions/predictions'
 
@@ -82,12 +82,14 @@ def main():
         )
 
     estimators = [
-        # ('char2', char_2_gram_pipeline),
+        ('char1', char_1_gram_pipeline),
+        ('char2', char_2_gram_pipeline),
         ('char3', char_3_gram_pipeline),
 
-        # ('word1', word_1_gram_pipeline),
+        ('word1', word_1_gram_pipeline),
         ('word2', word_2_gram_pipeline),
-        # ('word3', word_3_gram_pipeline),
+        ('word3', word_3_gram_pipeline),
+        ('lemma', lemma_2_gram_pipeline),
     ]
     
 
@@ -99,53 +101,52 @@ def main():
         ensemble_classifier.fit(training_examples, y_train)
         eval_acc = ensemble_classifier.score(test_examples, y_test)
         logger.info(f'Final eval accuracy {eval_acc}')
+        exit()
 
-    elif stack_type == 'meta_classifier':
-        for name, pipeline in estimators:
-            model_name = pipeline.steps[-1][0]
-            if not get_prediction_data(predictions_path + '/train/', name, model_name, max_features).empty:
-                logger.info(f'Skipping {name} {model_name} {max_features}')
-                continue
+    for name, pipeline in estimators:
+        model_name = pipeline.steps[-1][0]
+        if not get_prediction_data(predictions_path + '/train/', name, model_name, max_features).empty:
+            logger.info(f'Skipping {name} {model_name} {max_features}')
+            continue
 
-            logger.info(f'Name: {name}')
-            pipeline.fit(training_examples, y_train)
+        logger.info(f'Name: {name}')
+        pipeline.fit(training_examples, y_train)
 
-            training_predictions = pipeline.predict_proba(training_examples)
-            test_predictions = pipeline.predict_proba(test_examples)
+        training_predictions = pipeline.predict_proba(training_examples)
+        test_predictions = pipeline.predict_proba(test_examples)
 
-            classes = pipeline.steps[-1][1].classes_
+        classes = pipeline.steps[-1][1].classes_
 
-            training_df = pd.DataFrame(data=training_predictions, columns=classes)
-            test_df = pd.DataFrame(data=test_predictions, columns=classes)
+        training_df = pd.DataFrame(data=training_predictions, columns=classes)
+        test_df = pd.DataFrame(data=test_predictions, columns=classes)
 
-            eval_acc = pipeline.score(test_examples, y_test)
-            logger.info(f'Model accuracy: {eval_acc}')
+        eval_acc = pipeline.score(test_examples, y_test)
+        logger.info(f'Model accuracy: {eval_acc}')
 
-            training_df.to_csv(f'{predictions_path}/train/{name}_{model_name}_{max_features}_{eval_acc:.3f}.csv', index=False)
-            test_df.to_csv(f'{predictions_path}/test/{name}_{model_name}_{max_features}_{eval_acc:.3f}.csv', index=False)
+        training_df.to_csv(f'{predictions_path}/train/{name}_{model_name}_{max_features}_{eval_acc:.3f}.csv', index=False)
+        test_df.to_csv(f'{predictions_path}/test/{name}_{model_name}_{max_features}_{eval_acc:.3f}.csv', index=False)
 
-        training_frames = []
-        test_frames = []
-        for name, pipeline in estimators:
-            model_name = pipeline.steps[-1][0]
-            training_df = get_prediction_data(predictions_path + '/train/', name, model_name, max_features)
-            training_frames.append(training_df)
-            test_df = get_prediction_data(predictions_path + '/test/', name, model_name, max_features)
-            test_frames.append(test_df)
+    training_frames = []
+    test_frames = []
+    for name, pipeline in estimators:
+        model_name = pipeline.steps[-1][0]
+        training_df = get_prediction_data(predictions_path + '/train/', name, model_name, max_features)
+        training_frames.append(training_df)
+        test_df = get_prediction_data(predictions_path + '/test/', name, model_name, max_features)
+        test_frames.append(test_df)
 
-        all_training_data = pd.concat(training_frames, axis=1).values
-        all_test_data = pd.concat(test_frames, axis=1).values
+    all_training_data = pd.concat(training_frames, axis=1).values
+    all_test_data = pd.concat(test_frames, axis=1).values
 
-        meta_classifier = LinearDiscriminantAnalysis()
+    if stack_type == 'meta_classifier':
+        model = LinearDiscriminantAnalysis()
 
-        meta_classifier.fit(all_training_data, y_train)
-        eval_acc = meta_classifier.score(all_test_data, y_test)
-        logger.info(f'Final meta eval accuracy {eval_acc}')
-
-    elif stack_type == 'meta_ensemble':
-        pass
     else:
-        logger.info('No valid stack type set.')
+        model = BaggingClassifier(LinearDiscriminantAnalysis())
+
+    model.fit(all_training_data, y_train)
+    eval_acc = model.score(all_test_data, y_test)
+    logger.info(f'Final {stack_type} eval accuracy {eval_acc}')
 
 
 if __name__ == '__main__':

@@ -113,6 +113,7 @@ venv.bak/
 *.bin
 *.json
 /outputs/
+*/cache/*
 *_models/
 /temp
 /plots
