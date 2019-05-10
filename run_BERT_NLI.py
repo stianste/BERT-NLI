@@ -421,7 +421,7 @@ def main():
         all_label_ids = torch.tensor([f.label_id for f in train_features], dtype=torch.long)
         train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
         if args.local_rank == -1:
-            train_sampler = SequentialSampler(train_data)
+            train_sampler = RandomSampler(train_data)
         else:
             train_sampler = DistributedSampler(train_data)
 

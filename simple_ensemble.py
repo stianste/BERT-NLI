@@ -48,8 +48,8 @@ def get_prediction_data(dir_path, name, model_type, max_features):
 def get_tfidf_svm_with_arguments(ngram_range, analyzer, max_features, dec_func_shape='ovr'):
     return [
         ('tf-idf', TfidfVectorizer(max_features=max_features, ngram_range=ngram_range, analyzer=analyzer)),
-        # ('svm', SVC(kernel='linear', cache_size=2048, decision_function_shape=dec_func_shape, probability=True))
-        ('ffnn', MLPClassifier())
+        ('svm', SVC(kernel='linear', cache_size=4098, decision_function_shape=dec_func_shape, probability=True))
+        # ('ffnn', MLPClassifier())
     ]
 
 def get_toefl_data():
@@ -63,8 +63,9 @@ def get_toefl_data():
     return training_examples, y_train, test_examples, y_test
 
 def main():
-    max_features = 10000
+    max_features = None
     stack_type = '' # 'simple_ensemble', 'meta_classifier', 'meta_ensemble'
+    num_bagging_classifiers = 10
     mem_path = './common_predictions/cache'
     predictions_path = './common_predictions/predictions'
 
@@ -89,7 +90,7 @@ def main():
         ('word1', word_1_gram_pipeline),
         ('word2', word_2_gram_pipeline),
         ('word3', word_3_gram_pipeline),
-        ('lemma', lemma_2_gram_pipeline),
+        # ('lemma', lemma_2_gram_pipeline),
     ]
     
 
@@ -97,7 +98,7 @@ def main():
 
     logger.info(f'Stack type: {stack_type}')
     if stack_type == 'simple_ensemble':
-        ensemble_classifier = VotingClassifier(estimators=estimators, voting='soft', n_jobs=2)
+        ensemble_classifier = VotingClassifier(estimators=estimators, voting='soft', n_jobs=-1)
         ensemble_classifier.fit(training_examples, y_train)
         eval_acc = ensemble_classifier.score(test_examples, y_test)
         logger.info(f'Final eval accuracy {eval_acc}')
@@ -142,7 +143,7 @@ def main():
         model = LinearDiscriminantAnalysis()
 
     else:
-        model = BaggingClassifier(LinearDiscriminantAnalysis())
+        model = BaggingClassifier(LinearDiscriminantAnalysis(), n_estimators=num_bagging_classifiers)
 
     model.fit(all_training_data, y_train)
     eval_acc = model.score(all_test_data, y_test)
