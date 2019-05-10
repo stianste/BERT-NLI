@@ -35,8 +35,8 @@ export DATA_DIR=./data/RedditL2/reddit_downsampled/europe_data
 
 export MAX_SEQ_LENGTH=512
 export TRAIN_BATCH_SIZE=16
-export LEARNING_RATE=5e-5
-export NUM_TRAIN_EPOCHS=4
+export LEARNING_RATE=3e-5
+export NUM_TRAIN_EPOCHS=5
 export K=10
 export OUTPUT_DIR=./results/reddit
 

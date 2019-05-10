@@ -51,10 +51,11 @@ else:
         test_examples = [ex.text_a for ex in data_proc.get_dev_examples()]
         y_test = [ex.label for ex in data_proc.get_dev_examples()]
 
-        # model = ('svm', SVC(verbose=True, kernel='linear', cache_size=2048, decision_function_shape=dec_func_shape))
-        model = ('naive-bayes', MultinomialNB())
+        model = ('svm', SVC(kernel='linear', cache_size=2048, decision_function_shape=dec_func_shape))
+        # model = ('naive-bayes', MultinomialNB())
 
         eval_acc = train_and_evaluate_pipeline_for_model(model)
+
         accuracies.append(eval_acc)
 
     print('Average over 10 folds', sum(accuracies)/len(accuracies))

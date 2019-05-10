@@ -40,10 +40,10 @@ python ./run_BERT_NLI.py \
   --do_train \
   --do_eval \
   --data_dir $DATA_DIR \
-  --bert_model bert-large-uncased \
-  --learning_rate 2e-5 \
+  --bert_model bert-base-uncased \
+  --learning_rate 3e-5 \
   --max_seq_length 512 \
-  --train_batch_size 8 \
-  --num_train_epochs 4 \
-  --output_dir ./results/toefl/large
+  --train_batch_size 16 \
+  --num_train_epochs 1 \
+  --output_dir ./results/toefl/temp
 

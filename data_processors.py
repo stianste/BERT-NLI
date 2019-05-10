@@ -284,6 +284,7 @@ class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
     """Processor for the RedditL2 data set out of domain"""
 
     def __init__(self, _):
+        super(RedditOutOfDomainDataProcessor, self).__init__(_)
         self.europe_user2examples = {}
         self.non_europe_user2examples = {}
         self.europe_usernames = set()
@@ -325,18 +326,21 @@ class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
                 else:
                     self.non_europe_user2examples[username] = user_examples
 
-    def get_train_examples(self, data_dir: str='./data/RedditL2/reddit_downsampled/europe_data') -> List[InputExample]:
+    def get_train_examples(self, data_dir: str='./data/RedditL2/reddit_downsampled') -> List[InputExample]:
         self.discover_examples(data_dir + '/europe_data')
         self.discover_examples(data_dir + '/non_europe_data', is_europe=False)
         self.fill_users(data_dir)
 
         for usernames in self.lang2usernames.values():
             num_out_of_domain_users = int(len(usernames) * 0.1) # 10 percent of the users for testing
-            out_of_domain_overlap = set(usernames).intersection(self.non_europe_usernames)
-            non_europe_users = random.sample(out_of_domain_overlap, num_out_of_domain_users)
-            self.out_of_domain_users.add(non_europe_users)
+            usernames = set(usernames)
+
+            out_of_domain_overlap = usernames.intersection(self.non_europe_usernames)
+            non_europe_users = set(random.sample(out_of_domain_overlap, num_out_of_domain_users))
+            self.out_of_domain_users = self.out_of_domain_users.union(non_europe_users)
+
             # Use the ramaining possible users for training
-            self.indomain_users.add(set(usernames).difference(non_europe_users))
+            self.indomain_users = self.indomain_users.union(usernames.difference(non_europe_users))
 
         examples = []
         for username in self.indomain_users:
@@ -356,7 +360,7 @@ class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
 
 class AllOfRedditDataProcessor(RedditInDomainDataProcessor):
     def __init__(self, fold_number):
-        self.fold_number = fold_number - 1
+        super(AllOfRedditDataProcessor, self).__init__(fold_number)
         self.examples = []
         self.fold_size = -1
 
@@ -379,6 +383,9 @@ class AllOfRedditDataProcessor(RedditInDomainDataProcessor):
 
     def discover_examples(self, data_dir: str):
         for language_folder in os.listdir(data_dir):
+            if language_folder.split('.')[1] == 'Ukraine':
+                continue
+
             language = self.label2language[language_folder.split('.')[1]]
 
             examples = []

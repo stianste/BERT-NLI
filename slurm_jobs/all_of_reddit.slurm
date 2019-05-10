@@ -46,7 +46,7 @@ do
   echo 'Cross validation fold number:'
   echo $i
   python ./run_BERT_NLI.py \
-    --task_name redditl2 \
+    --task_name all-of-reddit \
     --do_train \
     --do_eval \
     --do_lower_case \

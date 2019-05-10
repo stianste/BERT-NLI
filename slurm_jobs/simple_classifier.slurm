@@ -1,12 +1,12 @@
 #!/bin/sh
 
 #SBATCH --partition=WORKQ
-#SBATCH --time=2:00:00
+#SBATCH --time=10:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
 #SBATCH --mem=8000
 #SBATCH --job-name="ngram-classifier"
-#SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/ngram.out
+#SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/simple_ngram.out
 #SBATCH --mail-user=stianste@stud.ntnu.no
 #SBATCH --mail-type=ALL
 
