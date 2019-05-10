@@ -467,9 +467,12 @@ def main():
 
     # Save training data outputs for meta-classifiers
     logger.info('Saving final training outputs')
-    all_inputs = np.array([])
-    all_outputs = np.array([])
-    all_predicted_logits = np.array([])
+
+    num_train_examples = len(train_dataloader)
+    all_inputs = np.zeros((num_train_examples, 1))
+    all_outputs = np.zeros((num_train_examples, 1))
+    all_predicted_logits = np.zeros((num_train_examples, len(label_list)))
+    data_idx = 0
 
     for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
         batch = tuple(t.to(device) for t in batch)
@@ -483,14 +486,13 @@ def main():
 
         outputs = np.argmax(logits, axis=1)
 
-        predicted_logits = np.amax(logits, axis=1)
-
-        all_inputs = np.append(all_inputs, label_ids)
-        all_outputs = np.append(all_outputs, outputs)
-        all_predicted_logits = np.append(all_predicted_logits, predicted_logits)
+        all_inputs[data_idx:data_idx + args.train_batch_size] = label_ids
+        all_outputs[data_idx:data_idx + args.train_batch_size] = outputs
+        all_predicted_logits[data_idx:data_idx + args.train_batch_size] = logits
+        data_idx += args.train_batch_size
 
     csv_filename = full_path + '_train_' + f'fold_{args.cross_validation_fold}'
-    save_csv(all_guids, all_inputs, all_outputs, all_predicted_logits, label_list, csv_filename)
+    save_csv(all_guids, all_inputs, all_outputs, all_predicted_logits.T, label_list, csv_filename)
 
 
     # Save a trained model
@@ -555,9 +557,11 @@ def main():
         eval_loss, eval_accuracy = 0, 0
         nb_eval_steps, nb_eval_examples = 0, 0
 
-        all_inputs = np.array([])
-        all_outputs = np.array([])
-        all_predicted_logits = np.array([[]])
+        num_eval_examples = len(eval_dataloader)
+        all_inputs = np.zeros((num_eval_examples, 1))
+        all_outputs = np.zeros((num_eval_examples, 1))
+        all_predicted_logits = np.zeros((num_eval_examples, len(label_list)))
+        data_idx = 0
  
         for input_ids, input_mask, segment_ids, label_ids in tqdm(eval_dataloader, desc="Evaluating"):
             input_ids = input_ids.to(device)
@@ -574,15 +578,10 @@ def main():
 
             outputs = np.argmax(logits, axis=1)
 
-            if False:
-                logger.info('Predicted langs:')
-                logger.info([label_list[i] for i in outputs])
-                logger.info('Correct langs:')
-                logger.info([label_list[i] for i in label_ids])
-
-            all_inputs = np.append(all_inputs, label_ids)
-            all_outputs = np.append(all_outputs, outputs)
-            all_predicted_logits = np.concatenate(all_predicted_logits, logits, axis=0)
+            all_inputs[data_idx:data_idx + args.eval_batch_size] = label_ids
+            all_outputs[data_idx:data_idx + args.eval_batch_size] = outputs
+            all_predicted_logits[data_idx:data_idx + args.eval_batch_size] = logits
+            data_idx += args.eval_batch_size
 
             tmp_eval_accuracy = accuracy(logits, label_ids)
 
