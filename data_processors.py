@@ -366,7 +366,8 @@ class AllOfRedditDataProcessor(RedditInDomainDataProcessor):
 
     def merge_domains(self, europe_examples, non_europe_examples):
         ''' Do a simple random combination of the two domains for now '''
-        return random.shuffle(europe_examples + non_europe_examples)
+        all_examples = europe_examples + non_europe_examples
+        return random.sample(all_examples, len(all_examples))
 
     def get_train_examples(self, data_dir: str='./data/RedditL2/text_chunks') -> List[InputExample]:
         europe_examples = self.discover_examples(data_dir + '/europe_data')
