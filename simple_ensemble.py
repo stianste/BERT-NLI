@@ -48,8 +48,8 @@ def get_prediction_data(dir_path, name, model_type, max_features):
 def get_tfidf_svm_with_arguments(ngram_range, analyzer, max_features, dec_func_shape='ovr'):
     return [
         ('tf-idf', TfidfVectorizer(max_features=max_features, ngram_range=ngram_range, analyzer=analyzer)),
-        ('svm', SVC(kernel='linear', cache_size=4098, decision_function_shape=dec_func_shape, probability=True))
-        # ('ffnn', MLPClassifier())
+        # ('svm', SVC(kernel='linear', cache_size=4098, decision_function_shape=dec_func_shape, probability=True))
+        ('ffnn', MLPClassifier(verbose=True))
     ]
 
 def get_toefl_data():
@@ -69,14 +69,14 @@ def predict_with_guids(examples, pipeline):
     guids = [None for _ in range(len(examples))]
 
     for i, (guid, text_a) in enumerate(examples):
-        predicted_probas = pipeline.predict_proba(text_a)
-        predictions[i] = predicted_probas
+        predicted_probas = pipeline.predict_proba([text_a])
+        predictions[i] = predicted_probas[0]
         guids[i] = guid
 
     return predictions, guids
 
 def main():
-    max_features = None
+    max_features = 1000
     reddit = False
     stack_type = 'meta_classifier' # 'simple_ensemble', 'meta_classifier', 'meta_ensemble'
     num_bagging_classifiers = 10
@@ -139,7 +139,7 @@ def main():
         test_df = pd.DataFrame(data=test_predictions, columns=classes)
         test_df['guid'] = test_guids
 
-        eval_acc = pipeline.score(test_examples, y_test)
+        eval_acc = pipeline.score([ex[1] for ex in test_examples], [ex[1] for ex in y_test])
         logger.info(f'Model accuracy: {eval_acc}')
 
         training_df.to_csv(f'{predictions_path}/train/{name}_{model_name}_{max_features}_{eval_acc:.3f}.csv', index=False)
@@ -158,8 +158,10 @@ def main():
 
     all_training_data_df = pd.concat(training_frames, axis=1)
     all_training_data_df.to_csv('./common_predictions/all_training_data.csv')
-    all_training_data = all_training_data_df.values
-    all_test_data = pd.concat(test_frames, axis=1).values
+    all_training_data_df.drop(columns='guid')
+    all_training_data = all_training_data_df.to_numpy()
+
+    all_test_data = pd.concat(test_frames, axis=1).drop(columns='guid').to_numpy()
 
     if stack_type == 'meta_classifier':
         model = MLPClassifier(verbose=True, max_iter=1000)
