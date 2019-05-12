@@ -109,7 +109,6 @@ class TOEFL11Processor(DataProcessor):
                 label = self.id2label[example_id]
 
                 text = "".join(f.readlines()).lower()
-                example_id = filename.split(".")[0]
 
                 example = InputExample(guid=example_id, text_a=text, label=label)
                 examples.append(example)
