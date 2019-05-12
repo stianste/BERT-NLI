@@ -382,7 +382,7 @@ class AllOfRedditDataProcessor(RedditInDomainDataProcessor):
         ''' Assumes get_train_examples has already been run '''
         return self._get_dev_fold(self.examples, self.fold_number, self.fold_size)
 
-    def discover_examples(self, data_dir: str):
+    def discover_examples(self, data_dir: str, indomain=True):
         for language_folder in os.listdir(data_dir):
             if language_folder.split('.')[1] == 'Ukraine':
                 continue
@@ -396,9 +396,10 @@ class AllOfRedditDataProcessor(RedditInDomainDataProcessor):
                     with open(full_path, 'r') as f:
                         sub_chunks = split_text_chunk_lines(f.readlines())
 
+                        prefix = '' if indomain else 'out_of_dom'
                         for i, sub_chunk in enumerate(sub_chunks):
                             examples.append(
-                                InputExample(guid=f'{username}_{chunk}_{i}', text_a=sub_chunk, label=language)
+                                InputExample(guid=f'{prefix}_{username}_{chunk}_{i}', text_a=sub_chunk, label=language)
                             )
         return examples
 
