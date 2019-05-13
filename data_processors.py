@@ -385,13 +385,13 @@ class AllOfRedditDataProcessor(RedditInDomainDataProcessor):
         return [self.examples[i] for i in dev_idxs]
 
     def discover_examples(self, data_dir: str, indomain=True):
+        examples = []
         for language_folder in os.listdir(data_dir):
             if language_folder.split('.')[1] == 'Ukraine':
                 continue
 
             language = self.label2language[language_folder.split('.')[1]]
 
-            examples = []
             for username in os.listdir(f'{data_dir}/{language_folder}'):
                 for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
                     full_path = f'{data_dir}/{language_folder}/{username}/{chunk}' 
