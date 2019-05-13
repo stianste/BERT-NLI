@@ -523,20 +523,19 @@ def main():
 
         # Keep track of all train ids, to make sure non are used for evaluation
         train_ids = set([input_example.guid for input_example in train_examples])
+        eval_ids = set([input_example.guid for input_example in eval_examples])
+        overlapping_ids = train_ids.intersection(eval_ids)
 
-        eval_ids = [input_example.guid for input_example in eval_examples]
-        overlapping_ids = set()
-        for eval_id in eval_ids:
-            if eval_id in train_ids:
-                logger.warning(f'{eval_id} is present both in test and training set.'
-                'Example will be removed from eval set.')
-                overlapping_ids.add(eval_id)
+        if len(overlapping_ids) > 0:
+            logger.warning(f'{len(overlapping_ids)} users are present both in test and training set.'
+            'These examples will be removed from the evaluation set.')
 
         # Clean memory
         del eval_ids
         del train_ids
         logger.info(f'Number of overlaps in training and test data: {len(overlapping_ids)}')
-        eval_examples = list(filter(lambda example: example in overlapping_ids, eval_examples))
+        eval_examples = list(filter(lambda example: 
+                            example.id in overlapping_ids, eval_examples))
 
 
         eval_features, num_unkown = convert_examples_to_features(

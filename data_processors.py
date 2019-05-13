@@ -395,10 +395,10 @@ class AllOfRedditDataProcessor(RedditInDomainDataProcessor):
                     with open(full_path, 'r') as f:
                         sub_chunks = split_text_chunk_lines(f.readlines())
 
-                        prefix = '' if indomain else 'out_of_dom'
+                        prefix = '' if indomain else 'out_of_dom_'
                         for i, sub_chunk in enumerate(sub_chunks):
                             examples.append(
-                                InputExample(guid=f'{prefix}_{username}_{chunk}_{i}', text_a=sub_chunk, label=language)
+                                InputExample(guid=f'{prefix}{username}_{chunk}_{i}', text_a=sub_chunk, label=language)
                             )
         return examples
 

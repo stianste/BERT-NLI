@@ -48,8 +48,7 @@ def get_prediction_data(dir_path, name, model_type, max_features):
 def get_tfidf_svm_with_arguments(ngram_range, analyzer, max_features, dec_func_shape='ovr'):
     return [
         ('tf-idf', TfidfVectorizer(max_features=max_features, ngram_range=ngram_range, analyzer=analyzer)),
-        # ('svm', SVC(kernel='linear', cache_size=4098, decision_function_shape=dec_func_shape, probability=True))
-        ('ffnn', MLPClassifier(verbose=True))
+        ('svm', SVC(kernel='linear', cache_size=4098, decision_function_shape=dec_func_shape, probability=True))
     ]
 
 def get_toefl_data():
@@ -64,20 +63,8 @@ def get_toefl_data():
 
     return training_examples, y_train, test_examples, y_test
 
-
-def predict_with_guids(examples, pipeline):
-    predictions = [[] for _ in range(len(examples))]
-    guids = [None for _ in range(len(examples))]
-
-    for i, (guid, text_a) in enumerate(examples):
-        predicted_probas = pipeline.predict_proba([text_a])
-        predictions[i] = predicted_probas[0]
-        guids[i] = guid
-
-    return predictions, guids
-
 def main():
-    max_features = 1000
+    max_features = None
     reddit = False
     stack_type = 'meta_classifier' # 'simple_ensemble', 'meta_classifier', 'meta_ensemble'
     num_bagging_classifiers = 10
@@ -99,29 +86,25 @@ def main():
         )
 
     estimators = [
-        # ('char1', char_1_gram_pipeline),
-        # ('char2', char_2_gram_pipeline),
+        ('char1', char_1_gram_pipeline),
+        ('char2', char_2_gram_pipeline),
         ('char3', char_3_gram_pipeline),
 
-        # ('word1', word_1_gram_pipeline),
+        ('word1', word_1_gram_pipeline),
         ('word2', word_2_gram_pipeline),
-        # ('word3', word_3_gram_pipeline),
+        ('word3', word_3_gram_pipeline),
         # ('lemma', lemma_2_gram_pipeline),
     ]
     
-
     training_examples, y_train, test_examples, y_test = get_toefl_data()
-    training_examples_no_guid = [ex[1] for ex in training_examples]
-    training_guids = [ex[0] for ex in training_examples]
-    y_train_no_guid = [ex[1] for ex in y_train]
-    y_train_guids = [ex[0] for ex in y_train]
 
-    test_examples_no_guid = [ex[1] for ex in test_examples]
-    test_guids = [ex[0] for ex in test_examples]
-    y_test_no_guid = [ex[1] for ex in y_test]
-    y_test_guids = [ex[0] for ex in y_test]
+    training_guids, training_examples_no_guid = zip(*training_examples)
+    y_train_guids, y_train_no_guid = zip(*y_train)
+    test_guids, test_examples_no_guid = zip(*test_examples)
+    y_test_guids, y_test_no_guid = zip(*y_test)
 
     logger.info(f'Stack type: {stack_type}')
+
     if stack_type == 'simple_ensemble':
         ensemble_classifier = VotingClassifier(estimators=estimators, voting='soft', n_jobs=-1)
         ensemble_classifier.fit(training_examples, y_train)
@@ -171,16 +154,16 @@ def main():
         test_frames.append(test_df)
 
     all_training_data_df = pd.concat(training_frames, axis=1)
-    all_training_data_df.to_csv('./common_predictions/all_training_data.csv')
+    all_training_data_df.to_csv('./common_predictions/all_training_data.csv', index=False)
     all_training_data = all_training_data_df.drop(columns=['guid', 'y_guid']).to_numpy()
 
     all_test_data = pd.concat(test_frames, axis=1).drop(columns=['guid', 'y_guid']).to_numpy()
 
     if stack_type == 'meta_classifier':
-        model = MLPClassifier(verbose=True, max_iter=1000)
+        model = LinearDiscriminantAnalysis()
 
     else:
-        model = BaggingClassifier(SVC(), n_estimators=num_bagging_classifiers)
+        model = BaggingClassifier(LinearDiscriminantAnalysis(), n_estimators=num_bagging_classifiers)
 
     logger.info(f'All training data shape: {all_training_data.shape}')
     logger.info(f'All test data shape: {all_test_data.shape}')
@@ -189,7 +172,6 @@ def main():
     model.fit(all_training_data, y_train_no_guid)
     eval_acc = model.score(all_test_data, y_test_no_guid)
     logger.info(f'Final {stack_type} eval accuracy {eval_acc}')
-
 
 if __name__ == '__main__':
     main()
