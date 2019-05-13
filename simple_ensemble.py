@@ -54,12 +54,13 @@ def get_tfidf_svm_with_arguments(ngram_range, analyzer, max_features, dec_func_s
 
 def get_toefl_data():
     data_proc = TOEFL11Processor()
-    train_examples = data_proc.get_train_examples()
-    training_examples = [(ex.guid, ex.text_a) for ex in train_examples]
-    y_train = [(ex.guid, ex.label) for ex in train_examples]
+    examples = data_proc.get_train_examples()
+    training_examples = [(ex.guid, ex.text_a) for ex in examples]
+    y_train = [(ex.guid, ex.label) for ex in examples]
 
-    test_examples = [(ex.guid, ex.text_a) for ex in data_proc.get_dev_examples()]
-    y_test = [(ex.guid, ex.label) for ex in data_proc.get_dev_examples()]
+    examples = data_proc.get_dev_examples()
+    test_examples = [(ex.guid, ex.text_a) for ex in examples]
+    y_test = [(ex.guid, ex.label) for ex in examples]
 
     return training_examples, y_train, test_examples, y_test
 
@@ -126,20 +127,33 @@ def main():
             continue
 
         logger.info(f'Name: {name}')
-        pipeline.fit([ex[1] for ex in training_examples], [ex[1] for ex in y_train])
+        training_examples_no_guid = [ex[1] for ex in training_examples]
+        training_guids = [ex[0] for ex in training_examples]
+        y_train_no_guid = [ex[1] for ex in y_train]
+        y_train_guids = [ex[0] for ex in y_train]
 
-        training_predictions, training_guids = predict_with_guids(training_examples, pipeline)
-        test_predictions, test_guids = predict_with_guids(test_examples, pipeline)
+        test_examples_no_guid = [ex[1] for ex in test_examples]
+        test_guids = [ex[0] for ex in test_examples]
+        y_test_no_guid = [ex[1] for ex in y_test]
+        y_test_guids = [ex[0] for ex in y_test]
+
+        pipeline.fit(training_examples_no_guid, y_train_no_guid)
+
+        training_predictions = pipeline.predict_proba(training_examples_no_guid)
+        test_predictions = pipeline.predict_proba(test_examples_no_guid)
 
         classes = pipeline.steps[-1][1].classes_
 
         training_df = pd.DataFrame(data=training_predictions, columns=classes)
         training_df['guid'] = training_guids
+        training_df['y_guid'] = y_train_guids
 
         test_df = pd.DataFrame(data=test_predictions, columns=classes)
         test_df['guid'] = test_guids
+        test_df['y_guid'] = y_test_guids
 
-        eval_acc = pipeline.score([ex[1] for ex in test_examples], [ex[1] for ex in y_test])
+        eval_acc = pipeline.score(test_examples_no_guid, y_test_no_guid)
+
         logger.info(f'Model accuracy: {eval_acc}')
 
         training_df.to_csv(f'{predictions_path}/train/{name}_{model_name}_{max_features}_{eval_acc:.3f}.csv', index=False)
@@ -158,10 +172,10 @@ def main():
 
     all_training_data_df = pd.concat(training_frames, axis=1)
     all_training_data_df.to_csv('./common_predictions/all_training_data.csv')
-    all_training_data_df.drop(columns='guid')
+    all_training_data_df.drop(columns=['guid', 'y_guid'])
     all_training_data = all_training_data_df.to_numpy()
 
-    all_test_data = pd.concat(test_frames, axis=1).drop(columns='guid').to_numpy()
+    all_test_data = pd.concat(test_frames, axis=1).drop(columns=['guid', 'y_guid']).to_numpy()
 
     if stack_type == 'meta_classifier':
         model = MLPClassifier(verbose=True, max_iter=1000)
