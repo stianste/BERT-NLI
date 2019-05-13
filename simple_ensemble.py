@@ -111,6 +111,15 @@ def main():
     
 
     training_examples, y_train, test_examples, y_test = get_toefl_data()
+    training_examples_no_guid = [ex[1] for ex in training_examples]
+    training_guids = [ex[0] for ex in training_examples]
+    y_train_no_guid = [ex[1] for ex in y_train]
+    y_train_guids = [ex[0] for ex in y_train]
+
+    test_examples_no_guid = [ex[1] for ex in test_examples]
+    test_guids = [ex[0] for ex in test_examples]
+    y_test_no_guid = [ex[1] for ex in y_test]
+    y_test_guids = [ex[0] for ex in y_test]
 
     logger.info(f'Stack type: {stack_type}')
     if stack_type == 'simple_ensemble':
@@ -127,15 +136,6 @@ def main():
             continue
 
         logger.info(f'Name: {name}')
-        training_examples_no_guid = [ex[1] for ex in training_examples]
-        training_guids = [ex[0] for ex in training_examples]
-        y_train_no_guid = [ex[1] for ex in y_train]
-        y_train_guids = [ex[0] for ex in y_train]
-
-        test_examples_no_guid = [ex[1] for ex in test_examples]
-        test_guids = [ex[0] for ex in test_examples]
-        y_test_no_guid = [ex[1] for ex in y_test]
-        y_test_guids = [ex[0] for ex in y_test]
 
         pipeline.fit(training_examples_no_guid, y_train_no_guid)
 
@@ -172,8 +172,7 @@ def main():
 
     all_training_data_df = pd.concat(training_frames, axis=1)
     all_training_data_df.to_csv('./common_predictions/all_training_data.csv')
-    all_training_data_df.drop(columns=['guid', 'y_guid'])
-    all_training_data = all_training_data_df.to_numpy()
+    all_training_data = all_training_data_df.drop(columns=['guid', 'y_guid']).to_numpy()
 
     all_test_data = pd.concat(test_frames, axis=1).drop(columns=['guid', 'y_guid']).to_numpy()
 
@@ -184,10 +183,11 @@ def main():
         model = BaggingClassifier(SVC(), n_estimators=num_bagging_classifiers)
 
     logger.info(f'All training data shape: {all_training_data.shape}')
+    logger.info(f'All test data shape: {all_test_data.shape}')
     logger.info(f'First labels: {y_train[:10]}')
     logger.info(f'Last labels: {y_train[-10:]}')
-    model.fit(all_training_data, y_train)
-    eval_acc = model.score(all_test_data, y_test)
+    model.fit(all_training_data, y_train_no_guid)
+    eval_acc = model.score(all_test_data, y_test_no_guid)
     logger.info(f'Final {stack_type} eval accuracy {eval_acc}')
 
 
