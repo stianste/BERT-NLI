@@ -2,6 +2,7 @@ import constants
 import os
 import random
 from collections import defaultdict
+from sklearn.model_selection import KFold
 
 from typing import List
 
@@ -362,6 +363,7 @@ class AllOfRedditDataProcessor(RedditInDomainDataProcessor):
         super(AllOfRedditDataProcessor, self).__init__(fold_number)
         self.examples = []
         self.fold_size = -1
+        self.k_fold = KFold(n_splits=10)
 
     def merge_domains(self, europe_examples, non_europe_examples):
         ''' Do a simple random combination of the two domains for now '''
@@ -370,16 +372,17 @@ class AllOfRedditDataProcessor(RedditInDomainDataProcessor):
 
     def get_train_examples(self, data_dir: str='./data/RedditL2/text_chunks') -> List[InputExample]:
         europe_examples = self.discover_examples(data_dir + '/europe_data')
-        non_europe_examples = self.discover_examples(data_dir + '/non_europe_data')
+        non_europe_examples = self.discover_examples(data_dir + '/non_europe_data', indomain=False)
 
         self.examples = self.merge_domains(europe_examples, non_europe_examples)
-        self.fold_size = len(self.examples) // 10
 
-        return self._get_train_fold(self.examples, self.fold_number, self.fold_size)
+        training_idxs = [fold for fold in self.k_fold.split(self.examples)][self.fold_number][0]
+        return [self.examples[i] for i in training_idxs]
 
     def get_dev_examples(self, data_dir: str='./data/RedditL2/text_chunks'):
         ''' Assumes get_train_examples has already been run '''
-        return self._get_dev_fold(self.examples, self.fold_number, self.fold_size)
+        dev_idxs = [fold for fold in self.k_fold.split(self.examples)][self.fold_number][1]
+        return [self.examples[i] for i in dev_idxs]
 
     def discover_examples(self, data_dir: str, indomain=True):
         for language_folder in os.listdir(data_dir):
