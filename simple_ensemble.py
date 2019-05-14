@@ -48,7 +48,8 @@ def get_prediction_data(dir_path, name, model_type, max_features):
 def get_tfidf_svm_with_arguments(ngram_range, analyzer, max_features, dec_func_shape='ovr'):
     return [
         ('tf-idf', TfidfVectorizer(max_features=max_features, ngram_range=ngram_range, analyzer=analyzer)),
-        ('svm', SVC(kernel='linear', cache_size=4098, decision_function_shape=dec_func_shape, probability=True))
+        # ('svm', SVC(kernel='linear', cache_size=4098, decision_function_shape=dec_func_shape, probability=True))
+        ('ffnn', MLPClassifier())
     ]
 
 def get_toefl_data():
@@ -64,7 +65,7 @@ def get_toefl_data():
     return training_examples, y_train, test_examples, y_test
 
 def main():
-    max_features = None
+    max_features = 10000
     reddit = False
     stack_type = 'meta_classifier' # 'simple_ensemble', 'meta_classifier', 'meta_ensemble'
     num_bagging_classifiers = 10
@@ -86,7 +87,7 @@ def main():
         )
 
     estimators = [
-        ('char1', char_1_gram_pipeline),
+        # ('char1', char_1_gram_pipeline),
         ('char2', char_2_gram_pipeline),
         ('char3', char_3_gram_pipeline),
 
@@ -107,8 +108,8 @@ def main():
 
     if stack_type == 'simple_ensemble':
         ensemble_classifier = VotingClassifier(estimators=estimators, voting='soft', n_jobs=-1)
-        ensemble_classifier.fit(training_examples, y_train)
-        eval_acc = ensemble_classifier.score(test_examples, y_test)
+        ensemble_classifier.fit(training_examples_no_guid, y_train_no_guid)
+        eval_acc = ensemble_classifier.score(test_examples_no_guid, y_test_no_guid)
         logger.info(f'Final eval accuracy {eval_acc}')
         exit()
 
@@ -160,16 +161,17 @@ def main():
     all_test_data = pd.concat(test_frames, axis=1).drop(columns=['guid', 'y_guid']).to_numpy()
 
     if stack_type == 'meta_classifier':
-        model = LinearDiscriminantAnalysis()
-
+        model = SVC(kernel='linear', cache_size=4098)
     else:
-        model = BaggingClassifier(LinearDiscriminantAnalysis(), n_estimators=num_bagging_classifiers)
+        model = BaggingClassifier(SVC(kernel='linear', cache_size=4098, probability=True), n_estimators=num_bagging_classifiers)
 
     logger.info(f'All training data shape: {all_training_data.shape}')
     logger.info(f'All test data shape: {all_test_data.shape}')
     logger.info(f'First labels: {y_train[:10]}')
     logger.info(f'Last labels: {y_train[-10:]}')
+    logger.info(f'Fitting modell')
     model.fit(all_training_data, y_train_no_guid)
+    logger.info(f'Done fitting model')
     eval_acc = model.score(all_test_data, y_test_no_guid)
     logger.info(f'Final {stack_type} eval accuracy {eval_acc}')
 
