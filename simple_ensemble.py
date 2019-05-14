@@ -65,7 +65,7 @@ def get_toefl_data():
 
     return training_examples, y_train, test_examples, y_test
 
-def save_results(predictions_path, bagging_estimator, model_name, base_estimator_name, max_features, eval_acc, f1):
+def save_results(predictions_path, model_name, bagging_estimator, base_estimator_name, max_features, eval_acc, f1):
     filename = f'{model_name}_{bagging_estimator}_{base_estimator_name}_{max_features}_{eval_acc:.3f}_{f1:.3f}'
     with open(predictions_path + f'/results/{filename}.txt', 'w') as f:
         f.write(f'accuracy : {eval_acc}')
@@ -166,9 +166,10 @@ def main():
         model = SVC(kernel='linear', cache_size=4098)
         bagging_estimator = ''
     else:
-        model = BaggingClassifier(LinearDiscriminantAnalysis(solver='lsqr'), 
+        base_estimator = MLPClassifier()
+        model = BaggingClassifier(base_estimator, 
                                   n_estimators=num_bagging_classifiers, max_samples=max_samples)
-        bagging_estimator = type(model.base_estimator_).__name__
+        bagging_estimator = type(base_estimator).__name__
 
     logger.info(f'All training data shape: {all_training_data.shape}')
     logger.info(f'All test data shape: {all_test_data.shape}')
