@@ -11,6 +11,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.base import TransformerMixin
 from sklearn.neural_network import MLPClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.metrics import f1_score
 
 from nltk.stem import PorterStemmer
 from nltk.tokenize import word_tokenize
@@ -63,6 +64,13 @@ def get_toefl_data():
     y_test = [(ex.guid, ex.label) for ex in examples]
 
     return training_examples, y_train, test_examples, y_test
+
+def save_results(predictions_path, model_name, base_estimator_name, max_features, eval_acc, f1):
+    filename = f'{model_name}_{base_estimator_name}_{max_features}_{eval_acc:.3f}_{f1:.3f}'
+    with open(predictions_path + f'/results/{filename}.txt', 'w') as f:
+        f.write(f'accuracy : {eval_acc}')
+        f.write(f'f1 : {f1}')
+
 
 def main():
     max_features = 10000
@@ -169,11 +177,19 @@ def main():
     logger.info(f'All test data shape: {all_test_data.shape}')
     logger.info(f'First labels: {y_train[:10]}')
     logger.info(f'Last labels: {y_train[-10:]}')
-    logger.info(f'Fitting modell')
+
     model.fit(all_training_data, y_train_no_guid)
-    logger.info(f'Done fitting model')
+
+    eval_predictions = model.predict(all_test_data)
     eval_acc = model.score(all_test_data, y_test_no_guid)
-    logger.info(f'Final {stack_type} eval accuracy {eval_acc}')
+
+    macro_f1 = f1_score(y_test_no_guid, eval_predictions, average='macro')
+    logger.info(f'Final {stack_type} eval accuracy {eval_acc}. F1: {macro_f1}')
+
+    base_estimator_name = estimators[0][1].steps[-1][0]
+    model_name = type(model).__name__
+
+    save_results(predictions_path, model_name, base_estimator_name, max_features, eval_acc, macro_f1)
 
 if __name__ == '__main__':
     main()
