@@ -75,8 +75,9 @@ def save_results(predictions_path, model_name, base_estimator_name, max_features
 def main():
     max_features = 10000
     reddit = False
-    stack_type = 'meta_classifier' # 'simple_ensemble', 'meta_classifier', 'meta_ensemble'
-    num_bagging_classifiers = 10
+    stack_type = 'meta_ensemble' # 'simple_ensemble', 'meta_classifier', 'meta_ensemble'
+    num_bagging_classifiers = 200
+    max_samples = 0.8
     mem_path = './common_predictions/cache'
     prefix = 'reddit' if reddit else 'toefl'
     predictions_path = f'./common_predictions/{prefix}_predictions'
@@ -171,7 +172,8 @@ def main():
     if stack_type == 'meta_classifier':
         model = SVC(kernel='linear', cache_size=4098)
     else:
-        model = BaggingClassifier(SVC(kernel='linear', cache_size=4098, probability=True), n_estimators=num_bagging_classifiers)
+        model = BaggingClassifier(LinearDiscriminantAnalysis(solver='lsqr'), 
+                                  n_estimators=num_bagging_classifiers, max_samples=max_samples)
 
     logger.info(f'All training data shape: {all_training_data.shape}')
     logger.info(f'All test data shape: {all_test_data.shape}')
