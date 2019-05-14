@@ -23,6 +23,7 @@ from data_processors import (
     RedditInDomainDataProcessor,
     RedditOutOfDomainDataProcessor,
     AllOfRedditDataProcessor,
+    RedditOutOfDomainToInDomainDataProcessor
 )
 
 from pytorch_pretrained_bert.tokenization import BertTokenizer
@@ -288,6 +289,7 @@ def main():
         "redditl2": RedditInDomainDataProcessor,
         "out-of-domain-redditl2": RedditOutOfDomainDataProcessor,
         "all-of-reddit": AllOfRedditDataProcessor,
+        "out-to-in-domain": RedditOutOfDomainToInDomainDataProcessor,
     }
 
     num_labels_task = {
@@ -295,6 +297,7 @@ def main():
         "redditl2": 23,
         "out-of-domain-redditl2": 23,
         "all-of-reddit": 23,
+        "out-to-in-domain": 23,
     }
 
     if args.local_rank == -1 or args.no_cuda:
@@ -337,9 +340,6 @@ def main():
     if args.cross_validation_fold:
         logger.info('Using cross-validation')
         processor = processors[task_name](args.cross_validation_fold)
-    elif args.binary_target_lang:
-        logger.info(f'Target binary language is: {args.binary_target_lang}')
-        processor = processors[task_name](args.binary_target_lang)
     else:
         processor = processors[task_name]()
 

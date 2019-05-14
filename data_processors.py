@@ -362,7 +362,6 @@ class AllOfRedditDataProcessor(RedditInDomainDataProcessor):
     def __init__(self, fold_number):
         super(AllOfRedditDataProcessor, self).__init__(fold_number)
         self.examples = []
-        self.fold_size = -1
         self.k_fold = KFold(n_splits=10)
 
     def merge_domains(self, europe_examples, non_europe_examples):
@@ -405,3 +404,18 @@ class AllOfRedditDataProcessor(RedditInDomainDataProcessor):
                             )
         return examples
 
+class RedditOutOfDomainToInDomainDataProcessor(AllOfRedditDataProcessor):
+    def __init__(self, _):
+        super(RedditOutOfDomainToInDomainDataProcessor, self).__init__(_)
+        self.europe_examples = []
+        self.non_europe_examples = []
+
+    def get_train_examples(self, data_dir: str='./data/RedditL2/text_chunks') -> List[InputExample]:
+        self.europe_examples = self.discover_examples(data_dir + '/europe_data')
+        self.non_europe_examples = self.discover_examples(data_dir + '/non_europe_data', indomain=False)
+
+        return self.non_europe_examples
+
+    def get_dev_examples(self, data_dir: str='./data/RedditL2/text_chunks'):
+        ''' Assumes get_train_examples has already been run '''
+        return self.europe_examples

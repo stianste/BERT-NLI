@@ -46,19 +46,20 @@ def get_prediction_data(dir_path, name, model_type, max_features):
 
     return pd.DataFrame()
 
-def get_tfidf_pipeline_for_model(model_name, ngram_range, analyzer, max_features, dec_func_shape='ovr'):
-
-    return [
-        ('tf-idf', TfidfVectorizer(max_features=max_features, ngram_range=ngram_range, analyzer=analyzer)),
-        (model_name, models[model_name])
-    ]
-
 def str2model(model_name):
     models = {
-        'svm' : SVC(kernel='linear', cache_size=4098, decision_function_shape=dec_func_shape, probability=True),
+        'svm' : SVC(kernel='linear', cache_size=4098, decision_function_shape='ovr', probability=True),
         'ffnn' : MLPClassifier(),
     }
     return models[model_name]
+
+def get_tfidf_pipeline_for_model(model_name, ngram_range, analyzer, max_features):
+
+    return [
+        ('tf-idf', TfidfVectorizer(max_features=max_features, ngram_range=ngram_range, analyzer=analyzer)),
+        (model_name, str2model(model_name))
+    ]
+
 
 def get_toefl_data():
     data_proc = TOEFL11Processor()
@@ -166,10 +167,10 @@ def main():
                 all_test_data = pd.concat(test_frames, axis=1).drop(columns=['guid', 'y_guid']).to_numpy()
 
                 if stack_type == 'meta_classifier':
-                    model = str2model('base_model_type')
+                    model = str2model(base_model_type)
                     bagging_estimator = ''
                 else:
-                    base_estimator = str2model('base_model_type')
+                    base_estimator = str2model(base_model_type)
                     model = BaggingClassifier(base_estimator, 
                                             n_estimators=num_bagging_classifiers, max_samples=max_samples)
                     bagging_estimator = type(base_estimator).__name__

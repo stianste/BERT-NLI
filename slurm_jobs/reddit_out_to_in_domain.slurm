@@ -1,12 +1,12 @@
 #!/bin/sh
 #SBATCH --partition=EPICALL
 #SBATCH --gres=gpu:2
-#SBATCH --time=130:00:00
+#SBATCH --time=50:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
 #SBATCH --mem=64000
-#SBATCH --job-name="BERT-NLI-TOEFL-TRAIN-LM"
-#SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/toefl_train_lm.out
+#SBATCH --job-name="out-to-in-domain-reddit"
+#SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/out_to_in_domain_reddit.out
 #SBATCH --mail-user=stianste@stud.ntnu.no
 #SBATCH --mail-type=ALL
 
@@ -31,14 +31,25 @@ virtualenv venv/
 source venv/bin/activate
 pip install -r requirements.txt
 
-python ./run_BERT_train_lm.py \
-  --bert_model bert-large-uncased \
-  --do_train \
-  --train_file data/NLI-shared-task-2017/all_lower.txt \
-  --output_dir toefl11_models \
-  --num_train_epochs 60 \
-  --learning_rate 3e-5 \
-  --train_batch_size 32 \
-  --max_seq_length 128 \
-  --vocab_file data/vocabs/bert-large-uncased-vocab_filled_misspelled.txt \
+export DATA_DIR=./data/RedditL2/text_chunks
 
+export MAX_SEQ_LENGTH=512
+export TRAIN_BATCH_SIZE=16
+export LEARNING_RATE=3e-5
+export NUM_TRAIN_EPOCHS=5
+export OUTPUT_DIR=./results/reddit/out_to_in_domain
+
+#!/bin/bash
+python ./run_BERT_NLI.py \
+  --task_name out-to-in-domain \
+  --do_train \
+  --do_eval \
+  --do_lower_case \
+  --data_dir $DATA_DIR \
+  --bert_model bert-base-uncased \
+  --max_seq_length $MAX_SEQ_LENGTH \
+  --train_batch_size $TRAIN_BATCH_SIZE \
+  --learning_rate $LEARNING_RATE \
+  --num_train_epochs $NUM_TRAIN_EPOCHS \
+  --output_dir $OUTPUT_DIR \
+  --cross_validation_fold 0
