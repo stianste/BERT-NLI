@@ -65,8 +65,8 @@ def get_toefl_data():
 
     return training_examples, y_train, test_examples, y_test
 
-def save_results(predictions_path, model_name, base_estimator_name, max_features, eval_acc, f1):
-    filename = f'{model_name}_{base_estimator_name}_{max_features}_{eval_acc:.3f}_{f1:.3f}'
+def save_results(predictions_path, bagging_estimator, model_name, base_estimator_name, max_features, eval_acc, f1):
+    filename = f'{model_name}_{bagging_estimator}_{base_estimator_name}_{max_features}_{eval_acc:.3f}_{f1:.3f}'
     with open(predictions_path + f'/results/{filename}.txt', 'w') as f:
         f.write(f'accuracy : {eval_acc}')
         f.write(f'f1 : {f1}')
@@ -114,13 +114,6 @@ def main():
     y_test_guids, y_test_no_guid = zip(*y_test)
 
     logger.info(f'Stack type: {stack_type}')
-
-    if stack_type == 'simple_ensemble':
-        ensemble_classifier = VotingClassifier(estimators=estimators, voting='soft', n_jobs=-1)
-        ensemble_classifier.fit(training_examples_no_guid, y_train_no_guid)
-        eval_acc = ensemble_classifier.score(test_examples_no_guid, y_test_no_guid)
-        logger.info(f'Final eval accuracy {eval_acc}')
-        exit()
 
     for name, pipeline in estimators:
         model_name = pipeline.steps[-1][0]
@@ -171,9 +164,11 @@ def main():
 
     if stack_type == 'meta_classifier':
         model = SVC(kernel='linear', cache_size=4098)
+        bagging_estimator = ''
     else:
         model = BaggingClassifier(LinearDiscriminantAnalysis(solver='lsqr'), 
                                   n_estimators=num_bagging_classifiers, max_samples=max_samples)
+        bagging_estimator = type(model.base_estimator_).__name__
 
     logger.info(f'All training data shape: {all_training_data.shape}')
     logger.info(f'All test data shape: {all_test_data.shape}')
@@ -191,7 +186,7 @@ def main():
     base_estimator_name = estimators[0][1].steps[-1][0]
     model_name = type(model).__name__
 
-    save_results(predictions_path, model_name, base_estimator_name, max_features, eval_acc, macro_f1)
+    save_results(predictions_path, model_name, bagging_estimator, base_estimator_name, max_features, eval_acc, macro_f1)
 
 if __name__ == '__main__':
     main()
