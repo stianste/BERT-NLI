@@ -42,7 +42,7 @@ def get_prediction_data(dir_path, name, model_type, max_features):
                                 os.listdir(dir_path)))
 
     if len(matches) > 0:
-        return pd.read_csv(dir_path + matches[0])
+        return pd.read_csv(dir_path + matches[0]).sort_values(by=['guid'])
 
     return pd.DataFrame()
 
@@ -81,10 +81,18 @@ def save_results(predictions_path, model_name, bagging_estimator, estimators, ma
         f.write(f'f1 : {f1}')
         f.write(', '.join([estimator[0] for estimator in estimators]))
 
+def merge_with_bert(df, predictions_path, scenario):
+    bert_filename = list(filter(lambda filename: filename.startswith('bert'),
+                                os.listdir(f'{predictions_path}/{scenario}')))[0]
+
+    bert_df = pd.read_csv(bert_filename)
+    combined_df = pd.merge(df, bert_df, on=['guid'])
+    return combined_df.sort_values(by=['guid'])
 
 def main():
     max_features = 10000
     reddit = False
+    use_bert = False
     stack_type = 'meta_ensemble' # 'simple_ensemble', 'meta_classifier', 'meta_ensemble'
     num_bagging_classifiers = 200
     max_samples = 0.8
@@ -161,7 +169,11 @@ def main():
                     test_frames.append(test_df)
 
                 all_training_data_df = pd.concat(training_frames, axis=1)
-                # all_training_data_df.to_csv('./common_predictions/all_training_data.csv', index=False)
+
+                if use_bert:
+                    all_training_data_df = merge_with_bert(all_training_data_df, predictions_path, 'train')
+
+                all_training_data_df.to_csv('./common_predictions/all_training_data.csv', index=False)
 
                 all_training_data = all_training_data_df.drop(columns=['guid', 'y_guid']).to_numpy()
                 all_test_data = pd.concat(test_frames, axis=1).drop(columns=['guid', 'y_guid']).to_numpy()

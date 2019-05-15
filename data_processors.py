@@ -114,7 +114,7 @@ class TOEFL11Processor(DataProcessor):
                 example = InputExample(guid=example_id, text_a=text, label=label)
                 examples.append(example)
 
-        return examples
+        return sorted(examples, key=lambda ex: ex.guid)
 
     def _create_labels(self, data_dir):
         training_labels_filepath = data_dir + constants.TOEFL11_TRAINING_LABELS_LOCATION
@@ -402,6 +402,7 @@ class AllOfRedditDataProcessor(RedditInDomainDataProcessor):
                             examples.append(
                                 InputExample(guid=f'{prefix}{username}_{chunk}_{i}', text_a=sub_chunk, label=language)
                             )
+
         return examples
 
 class RedditOutOfDomainToInDomainDataProcessor(AllOfRedditDataProcessor):
