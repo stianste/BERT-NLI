@@ -9,7 +9,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 max_features = None
 ngram_range = (1,1)
 dec_func_shape = 'ovr'
-analyzer = 'word' # Can also be 'word'
+analyzer = 'word' # Can also be 'char'
 
 reddit = True
 
@@ -40,22 +40,23 @@ if not reddit:
     train_and_evaluate_pipeline_for_model(model)
 
 else:
-    accuracies = []
+    for processor in [RedditInDomainDataProcessor, RedditOutOfDomainDataProcessor]:
+        accuracies = []
+        for k_fold in range(1, 11):
+            # data_proc = RedditOutOfDomainDataProcessor(k_fold)
+            data_proc = processor(k_fold)
+            training_input_examples = data_proc.get_train_examples(split_chunks=False)
+            training_examples = [ex.text_a for ex in training_input_examples]
+            y_train = [ex.label for ex in training_input_examples]
 
-    for k_fold in range(1, 11):
-        data_proc = RedditOutOfDomainDataProcessor(k_fold)
-        training_input_examples = data_proc.get_train_examples()
-        training_examples = [ex.text_a for ex in training_input_examples]
-        y_train = [ex.label for ex in training_input_examples]
+            test_examples = [ex.text_a for ex in data_proc.get_dev_examples()]
+            y_test = [ex.label for ex in data_proc.get_dev_examples()]
 
-        test_examples = [ex.text_a for ex in data_proc.get_dev_examples()]
-        y_test = [ex.label for ex in data_proc.get_dev_examples()]
+            # model = ('svm', SVC(kernel='linear', cache_size=2048, decision_function_shape=dec_func_shape))
+            model = ('naive-bayes', MultinomialNB())
 
-        model = ('svm', SVC(kernel='linear', cache_size=2048, decision_function_shape=dec_func_shape))
-        # model = ('naive-bayes', MultinomialNB())
+            eval_acc = train_and_evaluate_pipeline_for_model(model)
 
-        eval_acc = train_and_evaluate_pipeline_for_model(model)
+            accuracies.append(eval_acc)
 
-        accuracies.append(eval_acc)
-
-    print('Average over 10 folds', sum(accuracies)/len(accuracies))
+        print('Average over 10 folds', sum(accuracies)/len(accuracies))

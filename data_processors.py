@@ -196,7 +196,7 @@ class RedditInDomainDataProcessor(DataProcessor):
         }
 
 
-    def discover_examples(self, data_dir: str)-> None:
+    def discover_examples(self, data_dir: str, split_chunks=True)-> None:
         for language_folder in os.listdir(data_dir):
             language = language_folder
             for username in os.listdir(f'{data_dir}/{language_folder}'):
@@ -205,7 +205,7 @@ class RedditInDomainDataProcessor(DataProcessor):
                 for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
                     full_path = f'{data_dir}/{language_folder}/{username}/{chunk}' 
                     with open(full_path, 'r') as f:
-                        sub_chunks = split_text_chunk_lines(f.readlines())
+                        sub_chunks = split_text_chunk_lines(f.readlines()) if split_chunks else f.readlines()
 
                         for i, sub_chunk in enumerate(sub_chunks):
                             user_examples.append(
@@ -229,12 +229,12 @@ class RedditInDomainDataProcessor(DataProcessor):
 
         return examples
 
-    def get_train_examples(self, data_dir: str='./data/RedditL2/reddit_downsampled/europe_data') -> List[InputExample]:
+    def get_train_examples(self, data_dir: str='./data/RedditL2/reddit_downsampled/europe_data', split_chunks=True) -> List[InputExample]:
         '''
         Beware when calling this function in succession. Running the function twice will rediscover
         the examples and yield all examples twice.
         '''
-        self.discover_examples(data_dir)
+        self.discover_examples(data_dir, split_chunks)
         return self._get_examples_for_fold(self._get_train_fold)
 
     def get_dev_examples(self, data_dir: str='./data/RedditL2/reddit_downsampled/europe_data'):
@@ -305,7 +305,7 @@ class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
                 self.non_europe_usernames.add(username)
 
 
-    def discover_examples(self, data_dir: str, is_europe=True)-> None:
+    def discover_examples(self, data_dir: str, is_europe=True, split_chunks=True)-> None:
         for language_folder in os.listdir(data_dir):
             language = language_folder
             for username in os.listdir(f'{data_dir}/{language_folder}'):
@@ -314,7 +314,7 @@ class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
                 for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
                     full_path = f'{data_dir}/{language_folder}/{username}/{chunk}'
                     with open(full_path, 'r') as f:
-                        sub_chunks = split_text_chunk_lines(f.readlines())
+                        sub_chunks = split_text_chunk_lines(f.readlines()) if split_chunks else f.readlines()
 
                         for i, sub_chunk in enumerate(sub_chunks):
                             user_examples.append(
@@ -326,9 +326,9 @@ class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
                 else:
                     self.non_europe_user2examples[username] = user_examples
 
-    def get_train_examples(self, data_dir: str='./data/RedditL2/reddit_downsampled') -> List[InputExample]:
-        self.discover_examples(data_dir + '/europe_data')
-        self.discover_examples(data_dir + '/non_europe_data', is_europe=False)
+    def get_train_examples(self, data_dir: str='./data/RedditL2/reddit_downsampled', split_chunks=True) -> List[InputExample]:
+        self.discover_examples(data_dir + '/europe_data', split_chunks)
+        self.discover_examples(data_dir + '/non_europe_data', is_europe=False, split_chunks=split_chunks)
         self.fill_users(data_dir)
 
         for usernames in self.lang2usernames.values():
@@ -369,9 +369,9 @@ class AllOfRedditDataProcessor(RedditInDomainDataProcessor):
         all_examples = europe_examples + non_europe_examples
         return random.sample(all_examples, len(all_examples))
 
-    def get_train_examples(self, data_dir: str='./data/RedditL2/text_chunks') -> List[InputExample]:
-        europe_examples = self.discover_examples(data_dir + '/europe_data')
-        non_europe_examples = self.discover_examples(data_dir + '/non_europe_data', indomain=False)
+    def get_train_examples(self, data_dir: str='./data/RedditL2/text_chunks', split_chunks=True) -> List[InputExample]:
+        europe_examples = self.discover_examples(data_dir + '/europe_data', split_chunks)
+        non_europe_examples = self.discover_examples(data_dir + '/non_europe_data', indomain=False, split_chunks=split_chunks)
 
         self.examples = self.merge_domains(europe_examples, non_europe_examples)
 
@@ -383,7 +383,7 @@ class AllOfRedditDataProcessor(RedditInDomainDataProcessor):
         dev_idxs = [fold for fold in self.k_fold.split(self.examples)][self.fold_number][1]
         return [self.examples[i] for i in dev_idxs]
 
-    def discover_examples(self, data_dir: str, indomain=True):
+    def discover_examples(self, data_dir: str, indomain=True, split_chunks=True):
         examples = []
         for language_folder in os.listdir(data_dir):
             if language_folder.split('.')[1] == 'Ukraine':
@@ -395,7 +395,7 @@ class AllOfRedditDataProcessor(RedditInDomainDataProcessor):
                 for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
                     full_path = f'{data_dir}/{language_folder}/{username}/{chunk}' 
                     with open(full_path, 'r') as f:
-                        sub_chunks = split_text_chunk_lines(f.readlines())
+                        sub_chunks = split_text_chunk_lines(f.readlines()) if split_chunks else f.readlines()
 
                         prefix = '' if indomain else 'out_of_dom_'
                         for i, sub_chunk in enumerate(sub_chunks):
