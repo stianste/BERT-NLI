@@ -3,6 +3,7 @@ import os
 import pandas as pd
 
 from math import exp
+from scipy.special import softmax
 
 from data_processors import TOEFL11Processor, RedditInDomainDataProcessor
 
@@ -83,14 +84,10 @@ def save_results(predictions_path, model_name, bagging_estimator, estimators, ma
         f.write(f'f1 : {f1}')
         f.write(', '.join([estimator[0] for estimator in estimators]))
 
-def merge_with_bert(df, predictions_path, scenario):
+def merge_with_bert(df, predictions_path, scenario, bert_output_type=None):
     dir_path = f'{predictions_path}/{scenario}'
     bert_filename = list(filter(lambda filename: filename.startswith('bert'),
                                 os.listdir(dir_path)))[0]
-
-    def map_column_to_probabilies(column):
-        print('Mapping column', column)
-        return list(map(map_logit_to_probability, column))
 
     def map_logit_to_probability(logit):
         odds = exp(logit)
@@ -100,13 +97,14 @@ def merge_with_bert(df, predictions_path, scenario):
     bert_df = pd.read_csv(f'{dir_path}/{bert_filename}').drop(columns=['input', 'output', 'input_label', 'output_label'])
     bert_df = bert_df.sort_values(by=['guid'])
 
-    # Map logits to probabilities for all columns, except guid
     non_guid_columns = bert_df.columns.difference(['guid'])
-    print('Non guid columns:', non_guid_columns)
-    bert_df[non_guid_columns] = bert_df[non_guid_columns].applymap(lambda cell: map_logit_to_probability(cell))
+    if bert_output_type == 'probabilities':
+        # Map logits to probabilities for all columns, except guid
+        bert_df[non_guid_columns] = bert_df[non_guid_columns].applymap(lambda cell: map_logit_to_probability(cell))
 
-    print(bert_df.head())
-    print(df.head())
+    elif bert_output_type == 'softmax':
+        bert_df[non_guid_columns] = bert_df[non_guid_columns].apply(lambda row: softmax(row), axis=1)
+
     combined_df = pd.merge(df, bert_df, on=['guid'])
     return combined_df
 
@@ -114,6 +112,7 @@ def main():
     max_features = 10000
     reddit = False
     use_bert = True
+    bert_output_type = 'softmax'
     num_bagging_classifiers = 200
     max_samples = 0.8
     mem_path = './common_predictions/cache'
@@ -127,12 +126,9 @@ def main():
     test_guids, test_examples_no_guid = zip(*test_examples)
     y_test_guids, y_test_no_guid = zip(*y_test)
 
-    # for max_features in [5000, 10000, 30000, None]:
-    #     for stack_type in ['meta_classifier', 'meta_ensemble']:
-    #         for base_model_type in ['svm', 'ffnn']:
-    for max_features in [5000]:
-        for stack_type in ['meta_classifier']:
-            for base_model_type in ['ffnn']:
+    for max_features in [5000, 10000, 30000, None]:
+        for stack_type in ['meta_classifier', 'meta_ensemble']:
+            for base_model_type in ['svm', 'ffnn']:
                 logger.info(f'Running {max_features} {stack_type} {base_model_type}')
                 char_2_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (2,2), 'char', max_features), memory=mem_path)
                 char_3_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (3,3), 'char', max_features), memory=mem_path)
@@ -200,7 +196,7 @@ def main():
 
                 if use_bert:
                     logger.info('Merging with BERT')
-                    all_training_data_df = merge_with_bert(all_training_data_df, predictions_path, 'train')
+                    all_training_data_df = merge_with_bert(all_training_data_df, predictions_path, 'train', bert_output_type)
 
                 all_training_data_df.to_csv('./common_predictions/all_training_data.csv', index=False)
 
