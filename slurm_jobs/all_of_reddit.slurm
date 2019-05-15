@@ -1,10 +1,10 @@
 #!/bin/sh
 #SBATCH --partition=EPICALL
 #SBATCH --gres=gpu:2
-#SBATCH --time=100:00:00
+#SBATCH --time=9-00:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
-#SBATCH --mem=64000
+#SBATCH --mem=128000
 #SBATCH --job-name="all-of-reddit"
 #SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/all_of_reddit.out
 #SBATCH --mail-user=stianste@stud.ntnu.no

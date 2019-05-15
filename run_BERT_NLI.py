@@ -535,7 +535,7 @@ def main():
         del train_ids
         logger.info(f'Number of overlaps in training and test data: {len(overlapping_ids)}')
         eval_examples = list(filter(lambda example: 
-                            example.id in overlapping_ids, eval_examples))
+                            example.guid in overlapping_ids, eval_examples))
 
 
         eval_features, num_unkown = convert_examples_to_features(

@@ -4,7 +4,7 @@
 #SBATCH --time=30:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
-#SBATCH --mem=8000
+#SBATCH --mem=16000
 #SBATCH --job-name="ensemble"
 #SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/ensemble.out
 #SBATCH --mail-user=stianste@stud.ntnu.no

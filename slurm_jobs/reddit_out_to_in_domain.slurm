@@ -1,10 +1,10 @@
 #!/bin/sh
 #SBATCH --partition=EPICALL
 #SBATCH --gres=gpu:2
-#SBATCH --time=50:00:00
+#SBATCH --time=120:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
-#SBATCH --mem=64000
+#SBATCH --mem=128000
 #SBATCH --job-name="out-to-in-domain-reddit"
 #SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/out_to_in_domain_reddit.out
 #SBATCH --mail-user=stianste@stud.ntnu.no
@@ -52,4 +52,4 @@ python ./run_BERT_NLI.py \
   --learning_rate $LEARNING_RATE \
   --num_train_epochs $NUM_TRAIN_EPOCHS \
   --output_dir $OUTPUT_DIR \
-  --cross_validation_fold 0
+  --cross_validation_fold 1

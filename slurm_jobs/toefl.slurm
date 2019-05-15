@@ -44,6 +44,6 @@ python ./run_BERT_NLI.py \
   --learning_rate 3e-5 \
   --max_seq_length 512 \
   --train_batch_size 16 \
-  --num_train_epochs 10 \
+  --num_train_epochs 5 \
   --output_dir ./results/toefl/temp
 
