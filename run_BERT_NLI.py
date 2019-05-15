@@ -414,7 +414,7 @@ def main():
         if args.cross_validation_fold:
             logger.info(f'Cross validation fold: {args.cross_validation_fold}')
 
-        all_guids = [f.guid for f in train_features]
+        all_guids = torch.tensor([int(f.guid) for f in train_features], dtype=torch.long)
         all_input_ids = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in train_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in train_features], dtype=torch.long)
@@ -478,7 +478,7 @@ def main():
     for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
         batch = tuple(t.to(device) for t in batch)
         guids, input_ids, input_mask, segment_ids, label_ids = batch
-        correct_order_guids.extend(guids)
+        correct_order_guids.extend(guids.tolist())
 
         with torch.no_grad():
             logits = model(input_ids, segment_ids, input_mask)
@@ -537,7 +537,7 @@ def main():
         del train_ids
         logger.info(f'Number of overlaps in training and test data: {len(overlapping_ids)}')
         eval_examples = list(filter(lambda example: 
-                            example.guid in overlapping_ids, eval_examples))
+                            example.guid not in overlapping_ids, eval_examples))
 
 
         eval_features, num_unkown = convert_examples_to_features(
