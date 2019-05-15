@@ -414,12 +414,13 @@ def main():
         if args.cross_validation_fold:
             logger.info(f'Cross validation fold: {args.cross_validation_fold}')
 
-        all_guids = torch.tensor([int(f.guid) for f in train_features], dtype=torch.long)
+        all_guids = [int(f.guid) for f in train_features]
+        guid_idxs = torch.tensor([i for i in range(len(all_guids))], dtype=torch.long)
         all_input_ids = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in train_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in train_features], dtype=torch.long)
         all_label_ids = torch.tensor([f.label_id for f in train_features], dtype=torch.long)
-        train_data = TensorDataset(all_guids, all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
+        train_data = TensorDataset(guid_idxs, all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
         if args.local_rank == -1:
             train_sampler = RandomSampler(train_data)
         else:
@@ -434,7 +435,7 @@ def main():
             nb_tr_examples, nb_tr_steps = 0, 0
             for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
                 batch = tuple(t.to(device) for t in batch)
-                guids, input_ids, input_mask, segment_ids, label_ids = batch
+                guid_idxs, input_ids, input_mask, segment_ids, label_ids = batch
                 loss = model(input_ids, segment_ids, input_mask, label_ids)
                 if n_gpu > 1:
                     loss = loss.mean() # mean() to average on multi-gpu.
@@ -477,8 +478,8 @@ def main():
 
     for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
         batch = tuple(t.to(device) for t in batch)
-        guids, input_ids, input_mask, segment_ids, label_ids = batch
-        correct_order_guids.extend(guids.tolist())
+        guid_idxs, input_ids, input_mask, segment_ids, label_ids = batch
+        correct_order_guids.extend([all_guids[i] for i in guid_idxs.tolist()])
 
         with torch.no_grad():
             logits = model(input_ids, segment_ids, input_mask)
