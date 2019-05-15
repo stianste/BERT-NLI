@@ -2,6 +2,8 @@ import logging
 import os
 import pandas as pd
 
+from math import exp
+
 from data_processors import TOEFL11Processor, RedditInDomainDataProcessor
 
 from sklearn.svm import SVC
@@ -82,18 +84,36 @@ def save_results(predictions_path, model_name, bagging_estimator, estimators, ma
         f.write(', '.join([estimator[0] for estimator in estimators]))
 
 def merge_with_bert(df, predictions_path, scenario):
+    dir_path = f'{predictions_path}/{scenario}'
     bert_filename = list(filter(lambda filename: filename.startswith('bert'),
-                                os.listdir(f'{predictions_path}/{scenario}')))[0]
+                                os.listdir(dir_path)))[0]
 
-    bert_df = pd.read_csv(bert_filename)
+    def map_column_to_probabilies(column):
+        print('Mapping column', column)
+        return list(map(map_logit_to_probability, column))
+
+    def map_logit_to_probability(logit):
+        odds = exp(logit)
+        prob = odds / (1 + odds)
+        return prob
+
+    bert_df = pd.read_csv(f'{dir_path}/{bert_filename}').drop(columns=['input', 'output', 'input_label', 'output_label'])
+    bert_df = bert_df.sort_values(by=['guid'])
+
+    # Map logits to probabilities for all columns, except guid
+    non_guid_columns = bert_df.columns.difference(['guid'])
+    print('Non guid columns:', non_guid_columns)
+    bert_df[non_guid_columns] = bert_df[non_guid_columns].applymap(lambda cell: map_logit_to_probability(cell))
+
+    print(bert_df.head())
+    print(df.head())
     combined_df = pd.merge(df, bert_df, on=['guid'])
-    return combined_df.sort_values(by=['guid'])
+    return combined_df
 
 def main():
     max_features = 10000
     reddit = False
-    use_bert = False
-    stack_type = 'meta_ensemble' # 'simple_ensemble', 'meta_classifier', 'meta_ensemble'
+    use_bert = True
     num_bagging_classifiers = 200
     max_samples = 0.8
     mem_path = './common_predictions/cache'
@@ -107,9 +127,12 @@ def main():
     test_guids, test_examples_no_guid = zip(*test_examples)
     y_test_guids, y_test_no_guid = zip(*y_test)
 
-    for max_features in [5000, 10000, 30000, None]:
-        for stack_type in ['meta_classifier', 'meta_ensemble']:
-            for base_model_type in ['svm', 'ffnn']:
+    # for max_features in [5000, 10000, 30000, None]:
+    #     for stack_type in ['meta_classifier', 'meta_ensemble']:
+    #         for base_model_type in ['svm', 'ffnn']:
+    for max_features in [5000]:
+        for stack_type in ['meta_classifier']:
+            for base_model_type in ['ffnn']:
                 logger.info(f'Running {max_features} {stack_type} {base_model_type}')
                 char_2_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (2,2), 'char', max_features), memory=mem_path)
                 char_3_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (3,3), 'char', max_features), memory=mem_path)
@@ -168,15 +191,23 @@ def main():
                     training_frames.append(training_df)
                     test_frames.append(test_df)
 
-                all_training_data_df = pd.concat(training_frames, axis=1)
+                # all_training_data_df = pd.concat(training_frames, axis=1)
+                all_training_data_df = training_frames[0]
+                all_test_data_df = test_frames[0]
+                for i in range(1, len(training_frames)):
+                    all_training_data_df = pd.merge(all_training_data_df, training_frames[i], on='guid')
+                    all_test_data_df = pd.merge(all_test_data_df, test_frames[i], on='guid')
 
                 if use_bert:
+                    logger.info('Merging with BERT')
                     all_training_data_df = merge_with_bert(all_training_data_df, predictions_path, 'train')
 
                 all_training_data_df.to_csv('./common_predictions/all_training_data.csv', index=False)
 
-                all_training_data = all_training_data_df.drop(columns=['guid', 'y_guid']).to_numpy()
-                all_test_data = pd.concat(test_frames, axis=1).drop(columns=['guid', 'y_guid']).to_numpy()
+                drop_columns = [column_name for column_name in all_training_data_df.columns if 'guid' in column_name]
+                logger.info(f'Dropping columns: {drop_columns}')
+                all_training_data = all_training_data_df.drop(columns=drop_columns).to_numpy()
+                all_test_data = all_test_data_df.drop(columns=drop_columns).to_numpy()
 
                 if stack_type == 'meta_classifier':
                     model = str2model(base_model_type)
