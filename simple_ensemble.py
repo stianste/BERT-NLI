@@ -11,7 +11,7 @@ from sklearn.svm import SVC
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import VotingClassifier, BaggingClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.base import TransformerMixin
+from sklearn.base import TransformerMixin, BaseEstimator
 from sklearn.neural_network import MLPClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.metrics import f1_score
@@ -19,12 +19,14 @@ from sklearn.metrics import f1_score
 from nltk.stem import PorterStemmer
 from nltk.tokenize import word_tokenize
 
+from xgboost import XGBClassifier
+
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
                     level = logging.INFO)
 logger = logging.getLogger(__name__)
 
-class WordStemTransformer(TransformerMixin):
+class WordStemTransformer(TransformerMixin, BaseEstimator):
     def __init__(self):
         self.porter = PorterStemmer()
 
@@ -32,7 +34,7 @@ class WordStemTransformer(TransformerMixin):
         X_trans = []
         for example in X:
             words = word_tokenize(example)
-            words = map(self.porter.stem, words)
+            words = list(map(self.porter.stem, words))
             X_trans.append(''.join(words))
 
         return X_trans
@@ -53,6 +55,7 @@ def str2model(model_name):
     models = {
         'svm' : SVC(kernel='linear', cache_size=4098, decision_function_shape='ovr', probability=True),
         'ffnn' : MLPClassifier(),
+        'XGBoost' : XGBClassifier(max_depth=20),
     }
     return models[model_name]
 
@@ -63,6 +66,8 @@ def get_tfidf_pipeline_for_model(model_name, ngram_range, analyzer, max_features
         (model_name, str2model(model_name))
     ]
 
+def get_lemma_pipeline_for_model(model_name, ngram_range, analyzer, max_features):
+    return [ ('lemma', WordStemTransformer())] + get_tfidf_pipeline_for_model(model_name, ngram_range, analyzer, max_features)
 
 def get_toefl_data():
     data_proc = TOEFL11Processor()
@@ -117,6 +122,7 @@ def main():
 
     max_features = 30000
     stack_type = 'meta_classifier'
+    meta_classifier_type = 'ffnn'
     base_model_type = 'ffnn'
 
     num_bagging_classifiers = 200
@@ -141,6 +147,9 @@ def main():
     word_2_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (2,2), 'word', max_features), memory=mem_path)
     word_3_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (3,3), 'word', max_features), memory=mem_path)
 
+    lemma_1_gram_pipeline = Pipeline(get_lemma_pipeline_for_model(base_model_type, (1,1), 'word', max_features), memory=mem_path)
+    lemma_2_gram_pipeline = Pipeline(get_lemma_pipeline_for_model(base_model_type, (2,2), 'word', max_features), memory=mem_path)
+
     estimators = [
         ('char2', char_2_gram_pipeline),
         ('char3', char_3_gram_pipeline),
@@ -149,6 +158,9 @@ def main():
         ('word1', word_1_gram_pipeline),
         ('word2', word_2_gram_pipeline),
         ('word3', word_3_gram_pipeline),
+
+        ('lemma1', lemma_1_gram_pipeline),
+        ('lemma2', lemma_2_gram_pipeline),
     ]
 
     for name, pipeline in estimators:
@@ -156,6 +168,8 @@ def main():
         if not get_prediction_data(predictions_path + '/train/', name, model_name, max_features).empty:
             logger.info(f'Skipping {name} {model_name} {max_features}')
             continue
+
+        logger.info(f'Traning {name} {model_name} {max_features}...')
 
         pipeline.fit(training_examples_no_guid, y_train_no_guid)
 
@@ -210,10 +224,10 @@ def main():
     all_test_data = all_test_data_df.drop(columns=drop_columns).to_numpy()
 
     if stack_type == 'meta_classifier':
-        model = str2model(base_model_type)
+        model = str2model(meta_classifier_type)
         bagging_estimator = ''
     else:
-        base_estimator = str2model(base_model_type)
+        base_estimator = str2model(meta_classifier_type)
         model = BaggingClassifier(base_estimator,
                                 n_estimators=num_bagging_classifiers, max_samples=max_samples)
         bagging_estimator = type(base_estimator).__name__
