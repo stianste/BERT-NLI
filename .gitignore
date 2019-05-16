@@ -117,6 +117,7 @@ venv.bak/
 *_models/
 /temp
 /plots
+common_predictions/all_training_data.csv
 
 # vscode
 .vscode/

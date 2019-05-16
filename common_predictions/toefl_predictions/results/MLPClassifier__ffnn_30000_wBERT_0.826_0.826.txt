@@ -1,0 +1,3 @@
+accuracy : 0.8263636363636364
+f1 : 0.8264011665767366
+char2, char3, char4, word1, word2, word3
