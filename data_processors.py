@@ -390,12 +390,20 @@ class AllOfRedditDataProcessor(RedditInDomainDataProcessor):
                 continue
 
             language = self.label2language[language_folder.split('.')[1]]
+            total_sub_chunks_for_language = 0
 
             for username in os.listdir(f'{data_dir}/{language_folder}'):
+                if total_sub_chunks_for_language > 80000:
+                    continue  # Results in rougly 10 times the test data
+
                 for chunk in os.listdir(f'{data_dir}/{language_folder}/{username}'):
                     full_path = f'{data_dir}/{language_folder}/{username}/{chunk}' 
                     with open(full_path, 'r') as f:
                         sub_chunks = split_text_chunk_lines(f.readlines())
+                        total_sub_chunks_for_language += len(sub_chunks)
+
+                        if total_sub_chunks_for_language > 80000:
+                            break  # Results in rougly 10 times the test data
 
                         prefix = '' if indomain else 'out_of_dom_'
                         for i, sub_chunk in enumerate(sub_chunks):
@@ -410,18 +418,12 @@ class RedditOutOfDomainToInDomainDataProcessor(AllOfRedditDataProcessor):
         super(RedditOutOfDomainToInDomainDataProcessor, self).__init__(_)
         self.europe_examples = []
         self.non_europe_examples = []
-        self.k_fold = StratifiedKFold(n_splits=3)
 
     def get_train_examples(self, data_dir: str='./data/RedditL2/text_chunks') -> List[InputExample]:
         self.europe_examples = self.discover_examples(data_dir + '/europe_data')
         self.non_europe_examples = self.discover_examples(data_dir + '/non_europe_data', indomain=False)
 
-        training_labels = [ex.label for ex in self.non_europe_examples]
-
-        # Use a stratified third of the training examples
-        training_idxs = [fold for fold in self.k_fold.split(self.non_europe_examples, training_labels)][0][1]
-
-        return [self.non_europe_examples[i] for i in training_idxs] 
+        return self.non_europe_examples
 
     def get_dev_examples(self, data_dir: str='./data/RedditL2/text_chunks'):
         ''' Assumes get_train_examples has already been run '''
