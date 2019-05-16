@@ -12,7 +12,7 @@ total_num_chunks = 0
 for filename in sorted(os.listdir(outputs_folder)):
     if filename.split('.')[-1] == 'csv':
         df = pd.read_csv(f'{outputs_folder}/{filename}')
-        # df['guid'] = df['guid'].apply(lambda guid: ''.join(guid.split('_')[:-1]))
+        df['guid'] = df['guid'].apply(lambda guid: ''.join(guid.split('_')[:-1]))
         chunk2outputs = defaultdict(list)
         chunk2label = {}
         for i, row in df.iterrows():

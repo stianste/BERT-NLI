@@ -2,7 +2,7 @@ import constants
 import os
 import random
 from collections import defaultdict
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, StratifiedKFold
 
 from typing import List
 
@@ -410,12 +410,18 @@ class RedditOutOfDomainToInDomainDataProcessor(AllOfRedditDataProcessor):
         super(RedditOutOfDomainToInDomainDataProcessor, self).__init__(_)
         self.europe_examples = []
         self.non_europe_examples = []
+        self.k_fold = StratifiedKFold(n_splits=3)
 
     def get_train_examples(self, data_dir: str='./data/RedditL2/text_chunks') -> List[InputExample]:
         self.europe_examples = self.discover_examples(data_dir + '/europe_data')
         self.non_europe_examples = self.discover_examples(data_dir + '/non_europe_data', indomain=False)
 
-        return self.non_europe_examples
+        training_labels = [ex.label for ex in self.non_europe_examples]
+
+        # Use a stratified third of the training examples
+        training_idxs = [fold for fold in self.k_fold.split(self.non_europe_examples, training_labels)][0][1]
+
+        return [self.non_europe_examples[i] for i in training_idxs] 
 
     def get_dev_examples(self, data_dir: str='./data/RedditL2/text_chunks'):
         ''' Assumes get_train_examples has already been run '''
