@@ -156,39 +156,39 @@ def main():
     test_guids, test_examples_no_guid = zip(*test_examples)
     y_test_guids, y_test_no_guid = zip(*y_test)
 
-    logger.info(f'Running {max_features} {stack_type} {base_model_type}')
-    char_2_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (2,2), 'char', max_features), memory=mem_path)
-    char_3_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (3,3), 'char', max_features), memory=mem_path)
-    char_4_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (4,4), 'char', max_features), memory=mem_path)
-
-    word_1_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (1,1), 'word', max_features), memory=mem_path)
-    word_2_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (2,2), 'word', max_features), memory=mem_path)
-    word_3_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (3,3), 'word', max_features), memory=mem_path)
-
-    lemma_1_gram_pipeline = Pipeline(get_lemma_pipeline_for_model(base_model_type, (1,1), 'word', max_features), memory=mem_path)
-    lemma_2_gram_pipeline = Pipeline(get_lemma_pipeline_for_model(base_model_type, (2,2), 'word', max_features), memory=mem_path)
-
-    func_1_gram_pipeline = Pipeline(get_func_word_pipeline_for_model(base_model_type, (1,1), 'word', max_features), memory=mem_path)
-    func_2_gram_pipeline = Pipeline(get_func_word_pipeline_for_model(base_model_type, (2,2), 'word', max_features), memory=mem_path)
-
-    estimators = [
-        ('char2', char_2_gram_pipeline),
-        ('char3', char_3_gram_pipeline),
-        ('char4', char_4_gram_pipeline),
-
-        ('word1', word_1_gram_pipeline),
-        ('word2', word_2_gram_pipeline),
-        ('word3', word_3_gram_pipeline),
-
-        ('lemma1', lemma_1_gram_pipeline),
-        ('lemma2', lemma_2_gram_pipeline),
-
-        ('func1', func_1_gram_pipeline),
-        ('func2', func_2_gram_pipeline),
-    ]
 
     for base_model_type in ['svm', 'ffnn']:
         for max_features in [5000, 10000, 30000, None]:
+            logger.info(f'Running {max_features} {stack_type} {base_model_type}')
+            char_2_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (2,2), 'char', max_features), memory=mem_path)
+            char_3_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (3,3), 'char', max_features), memory=mem_path)
+            char_4_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (4,4), 'char', max_features), memory=mem_path)
+
+            word_1_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (1,1), 'word', max_features), memory=mem_path)
+            word_2_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (2,2), 'word', max_features), memory=mem_path)
+            word_3_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (3,3), 'word', max_features), memory=mem_path)
+
+            lemma_1_gram_pipeline = Pipeline(get_lemma_pipeline_for_model(base_model_type, (1,1), 'word', max_features), memory=mem_path)
+            lemma_2_gram_pipeline = Pipeline(get_lemma_pipeline_for_model(base_model_type, (2,2), 'word', max_features), memory=mem_path)
+
+            func_1_gram_pipeline = Pipeline(get_func_word_pipeline_for_model(base_model_type, (1,1), 'word', max_features), memory=mem_path)
+            func_2_gram_pipeline = Pipeline(get_func_word_pipeline_for_model(base_model_type, (2,2), 'word', max_features), memory=mem_path)
+
+            estimators = [
+                ('char2', char_2_gram_pipeline),
+                ('char3', char_3_gram_pipeline),
+                ('char4', char_4_gram_pipeline),
+
+                ('word1', word_1_gram_pipeline),
+                ('word2', word_2_gram_pipeline),
+                ('word3', word_3_gram_pipeline),
+
+                ('lemma1', lemma_1_gram_pipeline),
+                ('lemma2', lemma_2_gram_pipeline),
+
+                ('func1', func_1_gram_pipeline),
+                ('func2', func_2_gram_pipeline),
+            ]
             for name, pipeline in estimators:
                 model_name = pipeline.steps[-1][0]
                 if not get_prediction_data(predictions_path + '/train/', name, model_name, max_features).empty:
