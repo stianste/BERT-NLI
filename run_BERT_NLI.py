@@ -414,7 +414,7 @@ def main():
         if args.cross_validation_fold:
             logger.info(f'Cross validation fold: {args.cross_validation_fold}')
 
-        all_guids = [int(f.guid) for f in train_features]
+        all_guids = [f.guid for f in train_features]
         guid_idxs = torch.tensor([i for i in range(len(all_guids))], dtype=torch.long)
         all_input_ids = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in train_features], dtype=torch.long)
