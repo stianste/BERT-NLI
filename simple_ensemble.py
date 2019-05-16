@@ -18,6 +18,7 @@ from sklearn.metrics import f1_score
 
 from nltk.stem import PorterStemmer
 from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
 
 from xgboost import XGBClassifier
 
@@ -35,12 +36,26 @@ class WordStemTransformer(TransformerMixin, BaseEstimator):
         for example in X:
             words = word_tokenize(example)
             words = list(map(self.porter.stem, words))
-            X_trans.append(''.join(words))
+
+            X_trans.append(' '.join(words))
 
         return X_trans
 
     def fit(self, X, y=None):
         return self
+
+class FunctionWordTransformer(WordStemTransformer):
+    def __init__(self):
+        self.stopwords = set(stopwords.words('english'))
+
+    def transform(self, X):
+        X_trans = []
+        for example in X:
+            words = word_tokenize(example)
+            function_words = list(filter(lambda word: word in self.stopwords, words))
+            X_trans.append(' '.join(function_words))
+
+        return X_trans
 
 def get_prediction_data(dir_path, name, model_type, max_features):
     matches = list(filter(lambda filename: filename.startswith(f'{name}_{model_type}_{max_features}'), 
@@ -68,6 +83,9 @@ def get_tfidf_pipeline_for_model(model_name, ngram_range, analyzer, max_features
 
 def get_lemma_pipeline_for_model(model_name, ngram_range, analyzer, max_features):
     return [ ('lemma', WordStemTransformer())] + get_tfidf_pipeline_for_model(model_name, ngram_range, analyzer, max_features)
+
+def get_func_word_pipeline_for_model(model_name, ngram_range, analyzer, max_features):
+    return [ ('function-words', FunctionWordTransformer())] + get_tfidf_pipeline_for_model(model_name, ngram_range, analyzer, max_features)
 
 def get_toefl_data():
     data_proc = TOEFL11Processor()
@@ -120,7 +138,7 @@ def main():
     use_bert = True
     bert_output_type = ''
 
-    max_features = 30000
+    max_features = 10000
     stack_type = 'meta_classifier'
     meta_classifier_type = 'ffnn'
     base_model_type = 'ffnn'
@@ -150,6 +168,9 @@ def main():
     lemma_1_gram_pipeline = Pipeline(get_lemma_pipeline_for_model(base_model_type, (1,1), 'word', max_features), memory=mem_path)
     lemma_2_gram_pipeline = Pipeline(get_lemma_pipeline_for_model(base_model_type, (2,2), 'word', max_features), memory=mem_path)
 
+    func_1_gram_pipeline = Pipeline(get_func_word_pipeline_for_model(base_model_type, (1,1), 'word', max_features), memory=mem_path)
+    func_2_gram_pipeline = Pipeline(get_func_word_pipeline_for_model(base_model_type, (2,2), 'word', max_features), memory=mem_path)
+
     estimators = [
         ('char2', char_2_gram_pipeline),
         ('char3', char_3_gram_pipeline),
@@ -161,6 +182,9 @@ def main():
 
         ('lemma1', lemma_1_gram_pipeline),
         ('lemma2', lemma_2_gram_pipeline),
+
+        ('func1', func_1_gram_pipeline),
+        ('func2', func_2_gram_pipeline),
     ]
 
     for name, pipeline in estimators:

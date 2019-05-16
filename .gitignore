@@ -112,6 +112,8 @@ venv.bak/
 *.tar.gz
 *.bin
 *.json
+*~lock
+*~lock*
 /outputs/
 */cache/*
 *_models/
