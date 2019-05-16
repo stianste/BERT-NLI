@@ -3,15 +3,16 @@ import pandas as pd
 from collections import defaultdict, Counter
 
 out_of_domain = False
-sub_folder = 'out-of-domain' if out_of_domain else ''
-outputs_folder = f'./results/reddit/{sub_folder}/seq_512_batch_16_epochs_5.0_lr_3e-05/'
+# sub_folder = 'out-of-domain' if out_of_domain else ''
+# outputs_folder = f'./results/reddit/{sub_folder}/seq_512_batch_16_epochs_5.0_lr_3e-05/'
+outputs_folder = './results/baselines/naive-bayes/'
 
 accuracies = []
 total_num_chunks = 0
 for filename in sorted(os.listdir(outputs_folder)):
     if filename.split('.')[-1] == 'csv':
         df = pd.read_csv(f'{outputs_folder}/{filename}')
-        df['guid'] = df['guid'].apply(lambda guid: ''.join(guid.split('_')[:-1]))
+        # df['guid'] = df['guid'].apply(lambda guid: ''.join(guid.split('_')[:-1]))
         chunk2outputs = defaultdict(list)
         chunk2label = {}
         for i, row in df.iterrows():
