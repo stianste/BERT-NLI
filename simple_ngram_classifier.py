@@ -55,8 +55,8 @@ else:
     accuracies = []
 
     for k_fold in range(1, 11):
-        data_proc = RedditInDomainDataProcessor(k_fold)
-        # data_proc = RedditOutOfDomainDataProcessor(k_fold)
+        # data_proc = RedditInDomainDataProcessor(k_fold)
+        data_proc = RedditOutOfDomainDataProcessor(k_fold)
 
         training_input_examples = sorted(data_proc.get_train_examples(), key=lambda ex: ex.guid)
         training_examples = [ex.text_a for ex in training_input_examples]
@@ -72,7 +72,7 @@ else:
         model = ('svm', SVC(kernel='linear', cache_size=2048, decision_function_shape=dec_func_shape))
         # model = ('naive-bayes', MultinomialNB())
 
-        eval_acc = train_and_evaluate_pipeline_for_model(model, fold_nr=k_fold)
+        eval_acc = train_and_evaluate_pipeline_for_model(model, fold_nr=k_fold, indomain=False)
 
         accuracies.append(eval_acc)
 
