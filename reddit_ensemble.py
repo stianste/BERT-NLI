@@ -143,7 +143,7 @@ def main():
     use_bert = True
     bert_output_type = ''
 
-    max_features = 10000
+    max_features = None
     stack_type = 'meta_classifier'
     meta_classifier_type = 'ffnn'
     base_model_type = 'ffnn'
@@ -296,6 +296,12 @@ def main():
         logger.info(f'Final {stack_type} eval accuracy {eval_acc}. F1: {macro_f1}')
 
         model_name = type(model).__name__
+
+        pd.DataFrame({
+            'guid' : test_guids,
+            'label': training_guids,
+            'output' : eval_predictions,
+        }).to_csv(f'{predictions_path}/results/outputs/{fold_nr}.csv', index=False)
 
         save_results(predictions_path, model_name, bagging_estimator, estimators, max_features, use_bert, eval_acc, macro_f1)
 
