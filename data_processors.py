@@ -196,7 +196,7 @@ class RedditInDomainDataProcessor(DataProcessor):
         }
 
 
-    def discover_examples(self, data_dir: str)-> None:
+    def discover_examples(self, data_dir: str='./data/RedditL2/reddit_downsampled/europe_data')-> None:
         for language_folder in os.listdir(data_dir):
             language = language_folder
             for username in os.listdir(f'{data_dir}/{language_folder}'):
