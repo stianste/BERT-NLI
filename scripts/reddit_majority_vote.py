@@ -5,12 +5,12 @@ from collections import defaultdict, Counter
 out_of_domain = False
 # sub_folder = 'out-of-domain' if out_of_domain else ''
 # outputs_folder = f'./results/reddit/{sub_folder}/seq_512_batch_16_epochs_5.0_lr_3e-05/'
-outputs_folder = './results/baselines/naive-bayes/'
+outputs_folder = './results/baselines/svm/'
 
 accuracies = []
 total_num_chunks = 0
 for filename in sorted(os.listdir(outputs_folder)):
-    if filename.split('.')[-1] == 'csv':
+    if filename.split('.')[-1] == 'csv' and filename.startswith('out_of_domain'):
         df = pd.read_csv(f'{outputs_folder}/{filename}')
         df['guid'] = df['guid'].apply(lambda guid: ''.join(guid.split('_')[:-1]))
         chunk2outputs = defaultdict(list)
@@ -39,5 +39,5 @@ for filename in sorted(os.listdir(outputs_folder)):
         accuracies.append(eval_acc)
 
 average_eval_acc = sum(accuracies) / len(accuracies)
-print('Average accuracy:', average_eval_acc)
+print(f'Average accuracy: {average_eval_acc:.3f}')
 print('Average number of examples:', total_num_chunks / 10)
