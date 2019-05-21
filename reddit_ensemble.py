@@ -57,8 +57,8 @@ class FunctionWordTransformer(WordStemTransformer):
 
         return X_trans
 
-def get_prediction_data(dir_path, name, model_type, max_features):
-    matches = list(filter(lambda filename: filename.startswith(f'{name}_{model_type}_{max_features}'), 
+def get_prediction_data(dir_path, fold_nr, name, model_type, max_features):
+    matches = list(filter(lambda filename: filename.startswith(f'{fold_nr}_{name}_{model_type}_{max_features}'),
                                 os.listdir(dir_path)))
 
     if len(matches) > 0:
@@ -215,8 +215,8 @@ def main():
 
         for name, pipeline in estimators:
             model_name = pipeline.steps[-1][0]
-            if not get_prediction_data(predictions_path + '/train/', name, model_name, max_features).empty:
-                logger.info(f'Skipping {name} {model_name} {max_features}')
+            if not get_prediction_data(predictions_path + '/train/', fold_nr, name, model_name, max_features).empty:
+                logger.info(f'Skipping {fold_nr} {name} {model_name} {max_features}')
                 continue
 
             logger.info(f'Traning {name} {model_name} {max_features}...')
@@ -247,13 +247,15 @@ def main():
         for name, pipeline in estimators:
             model_name = pipeline.steps[-1][0]
 
-            training_df = get_prediction_data(predictions_path + '/train/', name, model_name, max_features)
-            test_df = get_prediction_data(predictions_path + '/test/', name, model_name, max_features)
+            training_df = get_prediction_data(predictions_path + '/train/', fold_nr, name, model_name, max_features)
+            test_df = get_prediction_data(predictions_path + '/test/', fold_nr, name, model_name, max_features)
+
+            assert not training_df.empty, 'Training data frame was empty'
+            assert not test_df.empty, 'Test data frame was empty'
 
             training_frames.append(training_df)
             test_frames.append(test_df)
 
-        # all_training_data_df = pd.concat(training_frames, axis=1)
         all_training_data_df = training_frames[0]
         all_test_data_df = test_frames[0]
 
@@ -266,7 +268,7 @@ def main():
             all_training_data_df = merge_with_bert(all_training_data_df, bert_training_file, bert_output_type)
             all_test_data_df = merge_with_bert(all_test_data_df, bert_test_file, bert_output_type)
 
-        all_training_data_df.to_csv('./common_predictions/reddit_predictions/all_training_data.csv', index=False)
+        all_training_data_df.to_csv(f'./common_predictions/reddit_predictions/{fold_nr}_all_training_data.csv', index=False)
 
         drop_columns = [column_name for column_name in all_training_data_df.columns if 'guid' in column_name]
         logger.info(f'Dropping columns: {drop_columns}')
@@ -284,26 +286,33 @@ def main():
 
         logger.info(f'All training data shape: {all_training_data.shape}')
         logger.info(f'All test data shape: {all_test_data.shape}')
-        logger.info(f'First labels: {y_train[:10]}')
-        logger.info(f'Last labels: {y_train[-10:]}')
+        logger.info(f'First labels: {y_train_no_guid[:10]}')
 
         model.fit(all_training_data, y_train_no_guid)
 
         eval_predictions = model.predict(all_test_data)
         eval_acc = model.score(all_test_data, y_test_no_guid)
-
         macro_f1 = f1_score(y_test_no_guid, eval_predictions, average='macro')
+
         logger.info(f'Final {stack_type} eval accuracy {eval_acc}. F1: {macro_f1}')
 
         model_name = type(model).__name__
+
+        base_estimator_name = estimators[0][1].steps[-1][0]
+        bert_string = 'wBERT_' if use_bert else ''
+
+        folder_name = f'{model_name}_{bagging_estimator}_{base_estimator_name}_{max_features}_{bert_string}'
+        output_path = f'{predictions_path}/results/outputs/'
+
+        os.makedirs(f'{output_path}/{folder_name}', exist_ok=True)
 
         pd.DataFrame({
             'guid' : test_guids,
             'label': training_guids,
             'output' : eval_predictions,
-        }).to_csv(f'{predictions_path}/results/outputs/{fold_nr}.csv', index=False)
+        }).to_csv(f'{output_path}/{folder_name}/{fold_nr}_{eval_acc:.3f}_{macro_f1:.3f}.csv', index=False)
 
-        save_results(predictions_path, model_name, bagging_estimator, estimators, max_features, use_bert, eval_acc, macro_f1)
+        # save_results(predictions_path, model_name, bagging_estimator, estimators, max_features, use_bert, eval_acc, macro_f1)
 
 if __name__ == '__main__':
     main()
