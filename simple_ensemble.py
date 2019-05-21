@@ -135,7 +135,6 @@ def merge_with_bert(df, predictions_path, scenario, bert_output_type=None):
 
 def main():
     reddit = False
-    use_bert = True
     bert_output_type = ''
 
     num_bagging_classifiers = 200
@@ -151,126 +150,127 @@ def main():
     test_guids, test_examples_no_guid = zip(*test_examples)
     y_test_guids, y_test_no_guid = zip(*y_test)
 
+    base_model_type = 'ffnn'
+    stack_type = 'meta_ensemble'
+    meta_classifier_type = 'svm'
+    max_features = None
+    use_bert = False
 
-    for base_model_type in ['svm', 'ffnn']:
-        for stack_type in ['meta_classifier', 'meta_ensemble']:
-            for meta_classifier_type in ['svm', 'ffnn']:
-                for max_features in [30000, None]:
-                    logger.info(f'Running {max_features} {stack_type} {meta_classifier_type} {base_model_type}')
-                    char_2_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (2,2), 'char', max_features), memory=mem_path)
-                    char_3_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (3,3), 'char', max_features), memory=mem_path)
-                    char_4_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (4,4), 'char', max_features), memory=mem_path)
+    logger.info(f'Running {max_features} {stack_type} {meta_classifier_type} {base_model_type}')
+    char_2_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (2,2), 'char', max_features), memory=mem_path)
+    char_3_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (3,3), 'char', max_features), memory=mem_path)
+    char_4_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (4,4), 'char', max_features), memory=mem_path)
 
-                    word_1_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (1,1), 'word', max_features), memory=mem_path)
-                    word_2_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (2,2), 'word', max_features), memory=mem_path)
-                    word_3_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (3,3), 'word', max_features), memory=mem_path)
+    word_1_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (1,1), 'word', max_features), memory=mem_path)
+    word_2_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (2,2), 'word', max_features), memory=mem_path)
+    word_3_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (3,3), 'word', max_features), memory=mem_path)
 
-                    lemma_1_gram_pipeline = Pipeline(get_lemma_pipeline_for_model(base_model_type, (1,1), 'word', max_features), memory=mem_path)
-                    lemma_2_gram_pipeline = Pipeline(get_lemma_pipeline_for_model(base_model_type, (2,2), 'word', max_features), memory=mem_path)
+    lemma_1_gram_pipeline = Pipeline(get_lemma_pipeline_for_model(base_model_type, (1,1), 'word', max_features), memory=mem_path)
+    lemma_2_gram_pipeline = Pipeline(get_lemma_pipeline_for_model(base_model_type, (2,2), 'word', max_features), memory=mem_path)
 
-                    func_1_gram_pipeline = Pipeline(get_func_word_pipeline_for_model(base_model_type, (1,1), 'word', max_features), memory=mem_path)
-                    func_2_gram_pipeline = Pipeline(get_func_word_pipeline_for_model(base_model_type, (2,2), 'word', max_features), memory=mem_path)
+    func_1_gram_pipeline = Pipeline(get_func_word_pipeline_for_model(base_model_type, (1,1), 'word', max_features), memory=mem_path)
+    func_2_gram_pipeline = Pipeline(get_func_word_pipeline_for_model(base_model_type, (2,2), 'word', max_features), memory=mem_path)
 
-                    estimators = [
-                        ('char2', char_2_gram_pipeline),
-                        ('char3', char_3_gram_pipeline),
-                        ('char4', char_4_gram_pipeline),
+    estimators = [
+        ('char2', char_2_gram_pipeline),
+        ('char3', char_3_gram_pipeline),
+        ('char4', char_4_gram_pipeline),
 
-                        ('word1', word_1_gram_pipeline),
-                        ('word2', word_2_gram_pipeline),
-                        ('word3', word_3_gram_pipeline),
+        ('word1', word_1_gram_pipeline),
+        ('word2', word_2_gram_pipeline),
+        ('word3', word_3_gram_pipeline),
 
-                        ('lemma1', lemma_1_gram_pipeline),
-                        ('lemma2', lemma_2_gram_pipeline),
+        ('lemma1', lemma_1_gram_pipeline),
+        ('lemma2', lemma_2_gram_pipeline),
 
-                        ('func1', func_1_gram_pipeline),
-                        ('func2', func_2_gram_pipeline),
-                    ]
-                    for name, pipeline in estimators:
-                        model_name = pipeline.steps[-1][0]
-                        if not get_prediction_data(predictions_path + '/train/', name, model_name, max_features).empty:
-                            logger.info(f'Skipping {name} {model_name} {max_features}')
-                            continue
+        ('func1', func_1_gram_pipeline),
+        ('func2', func_2_gram_pipeline),
+    ]
+    for name, pipeline in estimators:
+        model_name = pipeline.steps[-1][0]
+        if not get_prediction_data(predictions_path + '/train/', name, model_name, max_features).empty:
+            logger.info(f'Skipping {name} {model_name} {max_features}')
+            continue
 
-                        logger.info(f'Traning {name} {model_name} {max_features}...')
+        logger.info(f'Traning {name} {model_name} {max_features}...')
 
-                        pipeline.fit(training_examples_no_guid, y_train_no_guid)
+        pipeline.fit(training_examples_no_guid, y_train_no_guid)
 
-                        training_predictions = pipeline.predict_proba(training_examples_no_guid)
-                        test_predictions = pipeline.predict_proba(test_examples_no_guid)
+        training_predictions = pipeline.predict_proba(training_examples_no_guid)
+        test_predictions = pipeline.predict_proba(test_examples_no_guid)
 
-                        classes = pipeline.steps[-1][1].classes_
+        classes = pipeline.steps[-1][1].classes_
 
-                        training_df = pd.DataFrame(data=training_predictions, columns=classes)
-                        training_df['guid'] = training_guids
-                        training_df['y_guid'] = y_train_guids
+        training_df = pd.DataFrame(data=training_predictions, columns=classes)
+        training_df['guid'] = training_guids
+        training_df['y_guid'] = y_train_guids
 
-                        test_df = pd.DataFrame(data=test_predictions, columns=classes)
-                        test_df['guid'] = test_guids
-                        test_df['y_guid'] = y_test_guids
+        test_df = pd.DataFrame(data=test_predictions, columns=classes)
+        test_df['guid'] = test_guids
+        test_df['y_guid'] = y_test_guids
 
-                        eval_acc = pipeline.score(test_examples_no_guid, y_test_no_guid)
+        eval_acc = pipeline.score(test_examples_no_guid, y_test_no_guid)
 
-                        logger.info(f'Model accuracy: {eval_acc}')
+        logger.info(f'Model accuracy: {eval_acc}')
 
-                        training_df.to_csv(f'{predictions_path}/train/{name}_{model_name}_{max_features}_{eval_acc:.3f}.csv', index=False)
-                        test_df.to_csv(f'{predictions_path}/test/{name}_{model_name}_{max_features}_{eval_acc:.3f}.csv', index=False)
+        training_df.to_csv(f'{predictions_path}/train/{name}_{model_name}_{max_features}_{eval_acc:.3f}.csv', index=False)
+        test_df.to_csv(f'{predictions_path}/test/{name}_{model_name}_{max_features}_{eval_acc:.3f}.csv', index=False)
 
-                    training_frames = []
-                    test_frames = []
-                    for name, pipeline in estimators:
-                        model_name = pipeline.steps[-1][0]
+    training_frames = []
+    test_frames = []
+    for name, pipeline in estimators:
+        model_name = pipeline.steps[-1][0]
 
-                        training_df = get_prediction_data(predictions_path + '/train/', name, model_name, max_features)
-                        test_df = get_prediction_data(predictions_path + '/test/', name, model_name, max_features)
+        training_df = get_prediction_data(predictions_path + '/train/', name, model_name, max_features)
+        test_df = get_prediction_data(predictions_path + '/test/', name, model_name, max_features)
 
-                        training_frames.append(training_df)
-                        test_frames.append(test_df)
+        training_frames.append(training_df)
+        test_frames.append(test_df)
 
-                    # all_training_data_df = pd.concat(training_frames, axis=1)
-                    all_training_data_df = training_frames[0]
-                    all_test_data_df = test_frames[0]
-                    for i in range(1, len(training_frames)):
-                        all_training_data_df = pd.merge(all_training_data_df, training_frames[i], on='guid')
-                        all_test_data_df = pd.merge(all_test_data_df, test_frames[i], on='guid')
+    # all_training_data_df = pd.concat(training_frames, axis=1)
+    all_training_data_df = training_frames[0]
+    all_test_data_df = test_frames[0]
+    for i in range(1, len(training_frames)):
+        all_training_data_df = pd.merge(all_training_data_df, training_frames[i], on='guid')
+        all_test_data_df = pd.merge(all_test_data_df, test_frames[i], on='guid')
 
-                    if use_bert:
-                        logger.info('Merging with BERT')
-                        all_training_data_df = merge_with_bert(all_training_data_df, predictions_path, 'train', bert_output_type)
-                        all_test_data_df = merge_with_bert(all_test_data_df, predictions_path, 'test', bert_output_type)
+    if use_bert:
+        logger.info('Merging with BERT')
+        all_training_data_df = merge_with_bert(all_training_data_df, predictions_path, 'train', bert_output_type)
+        all_test_data_df = merge_with_bert(all_test_data_df, predictions_path, 'test', bert_output_type)
 
-                    all_training_data_df.to_csv('./common_predictions/all_training_data.csv', index=False)
+    all_training_data_df.to_csv('./common_predictions/all_training_data.csv', index=False)
 
-                    drop_columns = [column_name for column_name in all_training_data_df.columns if 'guid' in column_name]
-                    logger.info(f'Dropping columns: {drop_columns}')
-                    all_training_data = all_training_data_df.drop(columns=drop_columns).to_numpy()
-                    all_test_data = all_test_data_df.drop(columns=drop_columns).to_numpy()
+    drop_columns = [column_name for column_name in all_training_data_df.columns if 'guid' in column_name]
+    logger.info(f'Dropping columns: {drop_columns}')
+    all_training_data = all_training_data_df.drop(columns=drop_columns).to_numpy()
+    all_test_data = all_test_data_df.drop(columns=drop_columns).to_numpy()
 
-                    if stack_type == 'meta_classifier':
-                        model = str2model(meta_classifier_type)
-                        bagging_estimator = ''
-                    else:
-                        base_estimator = str2model(meta_classifier_type)
-                        model = BaggingClassifier(base_estimator,
-                                                n_estimators=num_bagging_classifiers, max_samples=max_samples)
-                        bagging_estimator = type(base_estimator).__name__
+    if stack_type == 'meta_classifier':
+        model = str2model(meta_classifier_type)
+        bagging_estimator = ''
+    else:
+        base_estimator = str2model(meta_classifier_type)
+        model = BaggingClassifier(base_estimator,
+                                n_estimators=num_bagging_classifiers, max_samples=max_samples)
+        bagging_estimator = type(base_estimator).__name__
 
-                    logger.info(f'All training data shape: {all_training_data.shape}')
-                    logger.info(f'All test data shape: {all_test_data.shape}')
-                    logger.info(f'First labels: {y_train[:10]}')
-                    logger.info(f'Last labels: {y_train[-10:]}')
+    logger.info(f'All training data shape: {all_training_data.shape}')
+    logger.info(f'All test data shape: {all_test_data.shape}')
+    logger.info(f'First labels: {y_train[:10]}')
+    logger.info(f'Last labels: {y_train[-10:]}')
 
-                    model.fit(all_training_data, y_train_no_guid)
+    model.fit(all_training_data, y_train_no_guid)
 
-                    eval_predictions = model.predict(all_test_data)
-                    eval_acc = model.score(all_test_data, y_test_no_guid)
+    eval_predictions = model.predict(all_test_data)
+    eval_acc = model.score(all_test_data, y_test_no_guid)
 
-                    macro_f1 = f1_score(y_test_no_guid, eval_predictions, average='macro')
-                    logger.info(f'Final {stack_type} eval accuracy {eval_acc}. F1: {macro_f1}')
+    macro_f1 = f1_score(y_test_no_guid, eval_predictions, average='macro')
+    logger.info(f'Final {stack_type} eval accuracy {eval_acc}. F1: {macro_f1}')
 
-                    model_name = type(model).__name__
+    model_name = type(model).__name__
 
-                    save_results(predictions_path, model_name, bagging_estimator, estimators, max_features, use_bert, eval_acc, macro_f1)
+    save_results(predictions_path, model_name, bagging_estimator, estimators, max_features, use_bert, eval_acc, macro_f1)
 
 if __name__ == '__main__':
     main()

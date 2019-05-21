@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #SBATCH --partition=WORKQ
-#SBATCH --time=30:00:00
+#SBATCH --time=5:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
 #SBATCH --mem=16000
