@@ -1,0 +1,3 @@
+accuracy : 0.8218181818181818
+f1 : 0.8214747308455407
+char2, char3, char4, word1, word2, word3, word4, lemma1, lemma2, func1, func2
