@@ -60,7 +60,8 @@ class FunctionWordTransformer(WordStemTransformer):
         return X_trans
 
 def get_prediction_data(dir_path, fold_nr, name, model_type, max_features):
-    matches = list(filter(lambda filename: filename.startswith(f'{fold_nr}_{name}_{model_type}_{max_features}'),
+    dir_path += fold_nr
+    matches = list(filter(lambda filename: filename.startswith(f'{name}_{model_type}_{max_features}'),
                                 os.listdir(dir_path)))
 
     if len(matches) > 0:
@@ -101,6 +102,10 @@ def get_all_reddit_examples():
             examples.extend(user_examples)
     
     return sorted(examples, key=lambda ex: ex.guid)
+
+def get_all_out_of_domain_examples():
+    data_proc = RedditInDomainDataProcessor(0)
+    return data_proc.get_train_examples() + data_proc.get_dev_examples()
 
 def get_examples_based_on_csv(csv_filepath, examples):
     logger.info(f'csv filepath {csv_filepath}')
@@ -143,21 +148,24 @@ def merge_with_bert(df, csv_filepath, bert_output_type=None):
 def main(args):
     reddit = True
     use_bert = True
+    out_of_domain = args.out_of_domain
+
     bert_output_type = ''
 
-    max_features = 30000
+    max_features = None
     stack_type = 'meta_classifier'
     meta_classifier_type = 'ffnn'
     base_model_type = 'ffnn'
 
-    folds_location = './results/reddit/seq_512_batch_16_epochs_5.0_lr_3e-05'
+    domain_str = '/out-of-domain/' if out_of_domain else '/'
+    folds_location = f'./results/reddit{domain_str}seq_512_batch_16_epochs_5.0_lr_3e-05'
 
     num_bagging_classifiers = 200
     max_samples = 0.8
     mem_path = './common_predictions/cache'
     prefix = 'reddit' if reddit else 'toefl'
-    predictions_path = f'./common_predictions/{prefix}_predictions'
-    all_examples = get_all_reddit_examples()
+    predictions_path = f'./common_predictions/{prefix}_predictions{domain_str}'
+    all_examples = get_all_reddit_examples() if not out_of_domain else get_all_out_of_domain_examples()
 
     if args.fold_nr:
         filename = f'fold_{args.fold_nr}.csv'
@@ -247,9 +255,17 @@ def main(args):
 
             logger.info(f'Model accuracy: {eval_acc}')
 
+            training_fold_folder = f'{predictions_path}/train/{full_name}'
+            test_fold_folder = f'{predictions_path}/test/{full_name}'
+
+            if not os.path.exists(training_fold_folder):
+                os.mkdir(training_fold_folder)
+            if not os.path.exists(test_fold_folder):
+                os.mkdir(test_fold_folder)
+
             full_name = f'{fold_nr}_{name}_{model_name}_{max_features}_{eval_acc:.3f}.csv'
-            training_df.to_csv(f'{predictions_path}/train/{full_name}', index=False)
-            test_df.to_csv(f'{predictions_path}/test/{full_name}', index=False)
+            training_df.to_csv(training_fold_folder, index=False)
+            test_df.to_csv(test_fold_folder, index=False)
 
         training_frames = []
         test_frames = []
@@ -321,8 +337,6 @@ def main(args):
             'output' : eval_predictions,
         }).to_csv(f'{output_path}/{folder_name}/{fold_nr}_{eval_acc:.3f}_{macro_f1:.3f}.csv', index=False)
 
-        # save_results(predictions_path, model_name, bagging_estimator, estimators, max_features, use_bert, eval_acc, macro_f1)
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
@@ -331,6 +345,11 @@ if __name__ == '__main__':
                         type=int,
                         required=False,
                         help='Specify which fold should be run. If not specified, all folds will be run in succession.')
+    parser.add_argument('--out_of_domain',
+                        default=False,
+                        type=bool,
+                        required=False,
+                        help='Specify whether to run the out-of-domain scenario.')
     args = parser.parse_args()
 
     main(args)
