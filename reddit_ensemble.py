@@ -317,7 +317,7 @@ def main(args):
 
         pd.DataFrame({
             'guid' : test_guids,
-            'label': training_guids,
+            'label': y_test_no_guid,
             'output' : eval_predictions,
         }).to_csv(f'{output_path}/{folder_name}/{fold_nr}_{eval_acc:.3f}_{macro_f1:.3f}.csv', index=False)
 
