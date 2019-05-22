@@ -9,7 +9,7 @@ from data_processors import TOEFL11Processor, RedditInDomainDataProcessor
 
 from sklearn.svm import SVC
 from sklearn.pipeline import Pipeline
-from sklearn.ensemble import VotingClassifier, BaggingClassifier
+from sklearn.ensemble import VotingClassifier, BaggingClassifier, AdaBoostClassifier, GradientBoostingClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.base import TransformerMixin, BaseEstimator
 from sklearn.neural_network import MLPClassifier
@@ -152,9 +152,9 @@ def main():
 
     base_model_type = 'ffnn'
     stack_type = 'meta_ensemble'
-    meta_classifier_type = 'svm'
+    meta_classifier_type = 'ffnn'
     max_features = None
-    use_bert = False
+    use_bert = True
 
     logger.info(f'Running {max_features} {stack_type} {meta_classifier_type} {base_model_type}')
     char_2_gram_pipeline = Pipeline(get_tfidf_pipeline_for_model(base_model_type, (2,2), 'char', max_features), memory=mem_path)
@@ -251,8 +251,10 @@ def main():
         bagging_estimator = ''
     else:
         base_estimator = str2model(meta_classifier_type)
-        model = BaggingClassifier(base_estimator,
-                                n_estimators=num_bagging_classifiers, max_samples=max_samples)
+        # model = BaggingClassifier(base_estimator,
+        #                         n_estimators=num_bagging_classifiers, max_samples=max_samples)
+        # model = AdaBoostClassifier(base_estimator=base_estimator)
+        model = GradientBoostingClassifier(base_estimator)
         bagging_estimator = type(base_estimator).__name__
 
     logger.info(f'All training data shape: {all_training_data.shape}')
