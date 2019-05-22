@@ -1,6 +1,7 @@
 import logging
 import os
 import pandas as pd
+import argparse
 
 from math import exp
 from scipy.special import softmax
@@ -26,6 +27,7 @@ logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(messa
                     datefmt = '%m/%d/%Y %H:%M:%S',
                     level = logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class WordStemTransformer(TransformerMixin, BaseEstimator):
     def __init__(self):
@@ -138,7 +140,7 @@ def merge_with_bert(df, csv_filepath, bert_output_type=None):
     combined_df = pd.merge(df, bert_df, on=['guid'])
     return combined_df
 
-def main():
+def main(args):
     reddit = True
     use_bert = True
     bert_output_type = ''
@@ -157,7 +159,14 @@ def main():
     predictions_path = f'./common_predictions/{prefix}_predictions'
     all_examples = get_all_reddit_examples()
 
-    for filename in sorted(os.listdir(folds_location)):
+    if args.fold_nr:
+        filename = f'fold_{args.fold_nr}.csv'
+        logger.info(f'Running only file: {filename}')
+        filenames = [filename]
+    else:
+        filenames = sorted(os.listdir(folds_location))
+
+    for filename in filenames:
         # Base training on the same folds used for BERT
         fold_nr, file_type = filename.split('.')
         
@@ -315,4 +324,13 @@ def main():
         # save_results(predictions_path, model_name, bagging_estimator, estimators, max_features, use_bert, eval_acc, macro_f1)
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--fold_nr',
+                        default=None,
+                        type=int,
+                        required=False,
+                        help='Specify which fold should be run. If not specified, all folds will be run in succession.')
+    args = parser.parse_args()
+
+    main(args)
