@@ -180,13 +180,13 @@ def merge_with_bert(df, csv_filepath, bert_output_type=None, is_testing=False):
 
 def main(args):
     reddit = True
-    use_bert = False
+    use_bert = True
     out_of_domain = args.out_of_domain
     logger.info(f'Using out of domain: {out_of_domain}')
 
     bert_output_type = ''
 
-    max_features = 30000
+    max_features = None
     stack_type = 'meta_classifier'
     meta_classifier_type = 'ffnn'
     base_model_type = 'ffnn'
@@ -278,6 +278,7 @@ def main(args):
 
             pipeline.fit(training_examples_no_guid, y_train_no_guid)
 
+
             training_predictions = pipeline.predict_proba(training_examples_no_guid)
             test_predictions = pipeline.predict_proba(test_examples_no_guid)
 
@@ -293,17 +294,17 @@ def main(args):
 
             logger.info(f'Model accuracy: {eval_acc}')
 
-            full_name = f'{fold_nr}/{name}_{model_name}_{max_features}_{eval_acc:.3f}.csv'
-            training_fold_folder = f'{predictions_path}/train/{full_name}'
-            test_fold_folder = f'{predictions_path}/test/{full_name}'
+            full_name = f'{name}_{model_name}_{max_features}_{eval_acc:.3f}.csv'
+            training_fold_folder = f'{predictions_path}train/{fold_nr}/'
+            test_fold_folder = f'{predictions_path}test/{fold_nr}/'
 
             if not os.path.exists(training_fold_folder):
                 os.mkdir(training_fold_folder)
             if not os.path.exists(test_fold_folder):
                 os.mkdir(test_fold_folder)
 
-            training_df.to_csv(training_fold_folder, index=False)
-            test_df.to_csv(test_fold_folder, index=False)
+            training_df.to_csv(f'{training_fold_folder}/{full_name}', index=False)
+            test_df.to_csv(f'{test_fold_folder}/{full_name}', index=False)
 
         training_frames = []
         test_frames = []
