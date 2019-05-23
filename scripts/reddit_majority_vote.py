@@ -5,12 +5,14 @@ from collections import defaultdict, Counter
 out_of_domain = False
 # sub_folder = 'out-of-domain' if out_of_domain else ''
 # outputs_folder = f'./results/reddit/{sub_folder}/seq_512_batch_16_epochs_5.0_lr_3e-05/'
-outputs_folder = './results/baselines/svm/'
+with_bert = True
+bert_string = '_wBERT' if with_bert else ''
+outputs_folder = f'./common_predictions/reddit_predictions/results/outputs/MLPClassifier__ffnn_30000{bert_string}_/'
 
 accuracies = []
 total_num_chunks = 0
 for filename in sorted(os.listdir(outputs_folder)):
-    if filename.split('.')[-1] == 'csv' and filename.startswith('out_of_domain'):
+    if filename.split('.')[-1] == 'csv':
         df = pd.read_csv(f'{outputs_folder}/{filename}')
         df['guid'] = df['guid'].apply(lambda guid: ''.join(guid.split('_')[:-1]))
         chunk2outputs = defaultdict(list)

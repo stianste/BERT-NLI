@@ -108,24 +108,10 @@ def get_all_reddit_examples():
 
 def get_all_out_of_domain_examples():
     data_proc = RedditOutOfDomainDataProcessor(0)
-    data_proc.get_train_examples()
+    train_examples = data_proc.get_train_examples()
+    dev_examples = data_proc.get_dev_examples()
 
-    examples = []
-    for username, user_examples in data_proc.europe_user2examples.items():
-        if username.lower() == 'white_seven':
-            logger.info('White seven in europe')
-
-        examples.extend(user_examples)
-    for username, user_examples in data_proc.non_europe_user2examples.items():
-        if username.lower() == 'white_seven':
-            logger.info('White seven in non europe')
-        examples.extend(user_examples)
-
-    logger.info(f'Number of examples: {len(examples)}')
-    logger.info(f'Number of unique guids: {len(set([ex.guid for ex in examples]))}')
-    counter = Counter([ex.guid for ex in examples])
-    print(counter.most_common(20))
-    return examples
+    return train_examples + dev_examples
 
 def get_examples_based_on_csv(csv_filepath, examples):
     logger.info(f'csv filepath {csv_filepath}')
