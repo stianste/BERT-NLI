@@ -5,8 +5,9 @@ import argparse
 
 from math import exp
 from scipy.special import softmax
+from collections import Counter
 
-from data_processors import RedditInDomainDataProcessor
+from data_processors import RedditInDomainDataProcessor, RedditOutOfDomainDataProcessor
 
 from sklearn.svm import SVC
 from sklearn.pipeline import Pipeline
@@ -104,13 +105,35 @@ def get_all_reddit_examples():
     return sorted(examples, key=lambda ex: ex.guid)
 
 def get_all_out_of_domain_examples():
-    data_proc = RedditInDomainDataProcessor(0)
-    return data_proc.get_train_examples() + data_proc.get_dev_examples()
+    data_proc = RedditOutOfDomainDataProcessor(0)
+    data_proc.get_train_examples()
+
+    examples = []
+    for username, user_examples in data_proc.europe_user2examples.items():
+        if username.lower() == 'white_seven':
+            logger.info('White seven in europe')
+
+        examples.extend(user_examples)
+    for username, user_examples in data_proc.non_europe_user2examples.items():
+        if username.lower() == 'white_seven':
+            logger.info('White seven in non europe')
+        examples.extend(user_examples)
+
+    logger.info(f'Number of examples: {len(examples)}')
+    logger.info(f'Number of unique guids: {len(set([ex.guid for ex in examples]))}')
+    counter = Counter([ex.guid for ex in examples])
+    print(counter.most_common(20))
+    return examples
 
 def get_examples_based_on_csv(csv_filepath, examples):
     logger.info(f'csv filepath {csv_filepath}')
     guids = set(pd.read_csv(csv_filepath)['guid'])
     filtered_examples = list(filter(lambda ex: ex.guid in guids, examples))
+    filtered_examples_guids = set([ex.guid for ex in filtered_examples])
+    logger.info(filtered_examples_guids.difference(guids))
+    logger.info(guids.difference(filtered_examples_guids))
+    logger.info(f'Len filtered: {len(filtered_examples)} len guids: {len(guids)}')
+    assert len(filtered_examples_guids) == len(filtered_examples)
     assert len(filtered_examples) == len(guids)
     return filtered_examples
 
@@ -149,6 +172,7 @@ def main(args):
     reddit = True
     use_bert = True
     out_of_domain = args.out_of_domain
+    logger.info(f'Using out of domain: {out_of_domain}')
 
     bert_output_type = ''
 
@@ -183,7 +207,7 @@ def main(args):
 
         logger.info(f'Loading data for fold {fold_nr}')
         training_folder = folds_location + '/training_predictions'
-        training_filename = list(filter(lambda name: fold_nr in name, os.listdir(training_folder)))[-1]
+        training_filename = list(filter(lambda name: fold_nr in name, sorted(os.listdir(training_folder))))[0]
         bert_training_file = f'{training_folder}/{training_filename}'
         bert_test_file = f'{folds_location}/{filename}'
         training_examples = get_examples_based_on_csv(bert_training_file, all_examples)
