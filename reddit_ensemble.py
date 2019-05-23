@@ -317,7 +317,7 @@ def main(args):
             all_training_data_df = merge_with_bert(all_training_data_df, bert_training_file, bert_output_type)
             all_test_data_df = merge_with_bert(all_test_data_df, bert_test_file, bert_output_type)
 
-        all_training_data_df.to_csv(f'./common_predictions/reddit_predictions/{fold_nr}_all_training_data.csv', index=False)
+        # all_training_data_df.to_csv(f'./common_predictions/reddit_predictions/{fold_nr}_all_training_data.csv', index=False)
 
         drop_columns = [column_name for column_name in all_training_data_df.columns if 'guid' in column_name]
         logger.info(f'Dropping columns: {drop_columns}')
