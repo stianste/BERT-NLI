@@ -163,7 +163,7 @@ def merge_with_bert(df, csv_filepath, bert_output_type=None, is_testing=False):
     bert_df = pd.read_csv(csv_filepath).drop(columns=['input', 'output', 'input_label', 'output_label'])
 
     if is_testing:
-        bert_df['guid'] = bert_df['guid'].applymap(lambda cell: 'out-of-domain-' + cell)
+        bert_df['guid'] = bert_df['guid'].apply(lambda col: 'out-of-domain-' + col)
 
     bert_df = bert_df.sort_values(by=['guid'])
 
@@ -299,9 +299,9 @@ def main(args):
             test_fold_folder = f'{predictions_path}test/{fold_nr}/'
 
             if not os.path.exists(training_fold_folder):
-                os.mkdir(training_fold_folder)
+                os.makedirs(training_fold_folder)
             if not os.path.exists(test_fold_folder):
-                os.mkdir(test_fold_folder)
+                os.makedirs(test_fold_folder)
 
             training_df.to_csv(f'{training_fold_folder}/{full_name}', index=False)
             test_df.to_csv(f'{test_fold_folder}/{full_name}', index=False)
