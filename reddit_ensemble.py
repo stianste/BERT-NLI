@@ -61,7 +61,7 @@ class FunctionWordTransformer(WordStemTransformer):
         return X_trans
 
 def get_prediction_data(dir_path, fold_nr, name, model_type, max_features):
-    dir_path += fold_nr
+    dir_path += fold_nr + '/'
     matches = list(filter(lambda filename: filename.startswith(f'{name}_{model_type}_{max_features}'),
                                 os.listdir(dir_path)))
 
@@ -256,7 +256,7 @@ def main(args):
 
         for name, pipeline in estimators:
             model_name = pipeline.steps[-1][0]
-            if not get_prediction_data(predictions_path + '/train/', fold_nr, name, model_name, max_features).empty:
+            if not get_prediction_data(predictions_path + 'train/', fold_nr, name, model_name, max_features).empty:
                 logger.info(f'Skipping {fold_nr} {name} {model_name} {max_features}')
                 continue
 
@@ -296,8 +296,8 @@ def main(args):
         for name, pipeline in estimators:
             model_name = pipeline.steps[-1][0]
 
-            training_df = get_prediction_data(predictions_path + '/train/', fold_nr, name, model_name, max_features)
-            test_df = get_prediction_data(predictions_path + '/test/', fold_nr, name, model_name, max_features)
+            training_df = get_prediction_data(predictions_path + 'train/', fold_nr, name, model_name, max_features)
+            test_df = get_prediction_data(predictions_path + 'test/', fold_nr, name, model_name, max_features)
 
             assert not training_df.empty, 'Training data frame was empty'
             assert not test_df.empty, 'Test data frame was empty'
