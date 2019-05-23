@@ -62,7 +62,9 @@ class FunctionWordTransformer(WordStemTransformer):
 
 def get_prediction_data(dir_path, fold_nr, name, model_type, max_features):
     dir_path += fold_nr + '/'
-    matches = list(filter(lambda filename: filename.startswith(f'{name}_{model_type}_{max_features}'),
+    match_str = f'{name}_{model_type}_{max_features}'
+
+    matches = list(filter(lambda filename: filename.startswith(match_str),
                                 os.listdir(dir_path)))
 
     if len(matches) > 0:
@@ -170,13 +172,13 @@ def merge_with_bert(df, csv_filepath, bert_output_type=None):
 
 def main(args):
     reddit = True
-    use_bert = True
+    use_bert = False
     out_of_domain = args.out_of_domain
     logger.info(f'Using out of domain: {out_of_domain}')
 
     bert_output_type = ''
 
-    max_features = None
+    max_features = 30000
     stack_type = 'meta_classifier'
     meta_classifier_type = 'ffnn'
     base_model_type = 'ffnn'
@@ -279,6 +281,7 @@ def main(args):
 
             logger.info(f'Model accuracy: {eval_acc}')
 
+            full_name = f'{fold_nr}/{name}_{model_name}_{max_features}_{eval_acc:.3f}.csv'
             training_fold_folder = f'{predictions_path}/train/{full_name}'
             test_fold_folder = f'{predictions_path}/test/{full_name}'
 
@@ -287,7 +290,6 @@ def main(args):
             if not os.path.exists(test_fold_folder):
                 os.mkdir(test_fold_folder)
 
-            full_name = f'{fold_nr}_{name}_{model_name}_{max_features}_{eval_acc:.3f}.csv'
             training_df.to_csv(training_fold_folder, index=False)
             test_df.to_csv(test_fold_folder, index=False)
 
