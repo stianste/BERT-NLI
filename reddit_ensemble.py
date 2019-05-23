@@ -2,6 +2,7 @@ import logging
 import os
 import pandas as pd
 import argparse
+import random
 
 from math import exp
 from scipy.special import softmax
@@ -62,6 +63,9 @@ class FunctionWordTransformer(WordStemTransformer):
 
 def get_prediction_data(dir_path, fold_nr, name, model_type, max_features):
     dir_path += fold_nr + '/'
+    if not os.path.exists(dir_path):
+        return pd.DataFrame()
+
     match_str = f'{name}_{model_type}_{max_features}'
 
     matches = list(filter(lambda filename: filename.startswith(match_str),
@@ -108,20 +112,34 @@ def get_all_reddit_examples():
 
 def get_all_out_of_domain_examples():
     data_proc = RedditOutOfDomainDataProcessor(0)
-    train_examples = data_proc.get_train_examples()
-    dev_examples = data_proc.get_dev_examples()
+    data_proc.get_train_examples()
 
-    return train_examples + dev_examples
+    examples = []
+    for user_examples in data_proc.europe_user2examples.values():
+        # differ between indomain and out-of-domain
+        for example in user_examples:
+            examples.append(example)
 
-def get_examples_based_on_csv(csv_filepath, examples):
+    for user_examples in data_proc.non_europe_user2examples.values():
+        for example in user_examples:
+            example.guid = 'out-of-domain-' + example.guid
+            examples.append(example)
+
+    return examples
+
+def get_examples_based_on_csv(csv_filepath, examples, is_testing=False):
     logger.info(f'csv filepath {csv_filepath}')
-    guids = set(pd.read_csv(csv_filepath)['guid'])
+    if is_testing:
+        guids = set(pd.read_csv(csv_filepath)['guid'].apply(lambda col: 'out-of-domain-' + col))
+    else:
+        guids = set(pd.read_csv(csv_filepath)['guid'])
+
     filtered_examples = list(filter(lambda ex: ex.guid in guids, examples))
-    filtered_examples_guids = set([ex.guid for ex in filtered_examples])
-    logger.info(filtered_examples_guids.difference(guids))
-    logger.info(guids.difference(filtered_examples_guids))
+    example_guids = set([ex.guid for ex in examples])
+    logger.info(random.sample(example_guids, 10))
+    logger.info(random.sample(guids, 10))
+
     logger.info(f'Len filtered: {len(filtered_examples)} len guids: {len(guids)}')
-    assert len(filtered_examples_guids) == len(filtered_examples)
     assert len(filtered_examples) == len(guids)
     return filtered_examples
 
@@ -135,7 +153,7 @@ def save_results(predictions_path, model_name, bagging_estimator, estimators, ma
         f.write(f'f1 : {f1}\n')
         f.write(', '.join([estimator[0] for estimator in estimators]))
 
-def merge_with_bert(df, csv_filepath, bert_output_type=None):
+def merge_with_bert(df, csv_filepath, bert_output_type=None, is_testing=False):
 
     def map_logit_to_probability(logit):
         odds = exp(logit)
@@ -143,6 +161,10 @@ def merge_with_bert(df, csv_filepath, bert_output_type=None):
         return prob
 
     bert_df = pd.read_csv(csv_filepath).drop(columns=['input', 'output', 'input_label', 'output_label'])
+
+    if is_testing:
+        bert_df['guid'] = bert_df['guid'].applymap(lambda cell: 'out-of-domain-' + cell)
+
     bert_df = bert_df.sort_values(by=['guid'])
 
     non_guid_columns = bert_df.columns.difference(['guid'])
@@ -203,7 +225,7 @@ def main(args):
         bert_training_file = f'{training_folder}/{training_filename}'
         bert_test_file = f'{folds_location}/{filename}'
         training_examples = get_examples_based_on_csv(bert_training_file, all_examples)
-        test_examples = get_examples_based_on_csv(bert_test_file, all_examples) 
+        test_examples = get_examples_based_on_csv(bert_test_file, all_examples, is_testing=out_of_domain)
 
         training_examples_no_guid = [ex.text_a for ex in training_examples]
         y_train_no_guid = [ex.label for ex in training_examples]
@@ -307,7 +329,7 @@ def main(args):
         if use_bert:
             logger.info('Merging with BERT')
             all_training_data_df = merge_with_bert(all_training_data_df, bert_training_file, bert_output_type)
-            all_test_data_df = merge_with_bert(all_test_data_df, bert_test_file, bert_output_type)
+            all_test_data_df = merge_with_bert(all_test_data_df, bert_test_file, bert_output_type, is_testing=out_of_domain)
 
         # all_training_data_df.to_csv(f'./common_predictions/reddit_predictions/{fold_nr}_all_training_data.csv', index=False)
 
