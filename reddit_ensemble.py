@@ -201,6 +201,10 @@ def main(args):
         filenames = sorted(os.listdir(folds_location))
 
     for filename in filenames:
+        
+        if os.path.isdir(filename):
+            # Skip the training folds folder itself
+            continue
         # Base training on the same folds used for BERT
         fold_nr, file_type = filename.split('.')
         
