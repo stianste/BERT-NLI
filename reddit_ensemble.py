@@ -5,8 +5,9 @@ import argparse
 
 from math import exp
 from scipy.special import softmax
+from collections import Counter
 
-from data_processors import RedditInDomainDataProcessor
+from data_processors import RedditInDomainDataProcessor, RedditOutOfDomainDataProcessor
 
 from sklearn.svm import SVC
 from sklearn.pipeline import Pipeline
@@ -60,7 +61,10 @@ class FunctionWordTransformer(WordStemTransformer):
         return X_trans
 
 def get_prediction_data(dir_path, fold_nr, name, model_type, max_features):
-    matches = list(filter(lambda filename: filename.startswith(f'{fold_nr}_{name}_{model_type}_{max_features}'),
+    dir_path += fold_nr + '/'
+    match_str = f'{name}_{model_type}_{max_features}'
+
+    matches = list(filter(lambda filename: filename.startswith(match_str),
                                 os.listdir(dir_path)))
 
     if len(matches) > 0:
@@ -102,10 +106,36 @@ def get_all_reddit_examples():
     
     return sorted(examples, key=lambda ex: ex.guid)
 
+def get_all_out_of_domain_examples():
+    data_proc = RedditOutOfDomainDataProcessor(0)
+    data_proc.get_train_examples()
+
+    examples = []
+    for username, user_examples in data_proc.europe_user2examples.items():
+        if username.lower() == 'white_seven':
+            logger.info('White seven in europe')
+
+        examples.extend(user_examples)
+    for username, user_examples in data_proc.non_europe_user2examples.items():
+        if username.lower() == 'white_seven':
+            logger.info('White seven in non europe')
+        examples.extend(user_examples)
+
+    logger.info(f'Number of examples: {len(examples)}')
+    logger.info(f'Number of unique guids: {len(set([ex.guid for ex in examples]))}')
+    counter = Counter([ex.guid for ex in examples])
+    print(counter.most_common(20))
+    return examples
+
 def get_examples_based_on_csv(csv_filepath, examples):
     logger.info(f'csv filepath {csv_filepath}')
     guids = set(pd.read_csv(csv_filepath)['guid'])
     filtered_examples = list(filter(lambda ex: ex.guid in guids, examples))
+    filtered_examples_guids = set([ex.guid for ex in filtered_examples])
+    logger.info(filtered_examples_guids.difference(guids))
+    logger.info(guids.difference(filtered_examples_guids))
+    logger.info(f'Len filtered: {len(filtered_examples)} len guids: {len(guids)}')
+    assert len(filtered_examples_guids) == len(filtered_examples)
     assert len(filtered_examples) == len(guids)
     return filtered_examples
 
@@ -142,7 +172,10 @@ def merge_with_bert(df, csv_filepath, bert_output_type=None):
 
 def main(args):
     reddit = True
-    use_bert = True
+    use_bert = False
+    out_of_domain = args.out_of_domain
+    logger.info(f'Using out of domain: {out_of_domain}')
+
     bert_output_type = ''
 
     max_features = 30000
@@ -150,14 +183,15 @@ def main(args):
     meta_classifier_type = 'ffnn'
     base_model_type = 'ffnn'
 
-    folds_location = './results/reddit/seq_512_batch_16_epochs_5.0_lr_3e-05'
+    domain_str = '/out-of-domain/' if out_of_domain else '/'
+    folds_location = f'./results/reddit{domain_str}seq_512_batch_16_epochs_5.0_lr_3e-05'
 
     num_bagging_classifiers = 200
     max_samples = 0.8
     mem_path = './common_predictions/cache'
     prefix = 'reddit' if reddit else 'toefl'
-    predictions_path = f'./common_predictions/{prefix}_predictions'
-    all_examples = get_all_reddit_examples()
+    predictions_path = f'./common_predictions/{prefix}_predictions{domain_str}'
+    all_examples = get_all_reddit_examples() if not out_of_domain else get_all_out_of_domain_examples()
 
     if args.fold_nr:
         filename = f'fold_{args.fold_nr}.csv'
@@ -167,6 +201,10 @@ def main(args):
         filenames = sorted(os.listdir(folds_location))
 
     for filename in filenames:
+        
+        if os.path.isdir(filename):
+            # Skip the training folds folder itself
+            continue
         # Base training on the same folds used for BERT
         fold_nr, file_type = filename.split('.')
         
@@ -175,7 +213,7 @@ def main(args):
 
         logger.info(f'Loading data for fold {fold_nr}')
         training_folder = folds_location + '/training_predictions'
-        training_filename = list(filter(lambda name: fold_nr in name, os.listdir(training_folder)))[-1]
+        training_filename = list(filter(lambda name: fold_nr in name, sorted(os.listdir(training_folder))))[0]
         bert_training_file = f'{training_folder}/{training_filename}'
         bert_test_file = f'{folds_location}/{filename}'
         training_examples = get_examples_based_on_csv(bert_training_file, all_examples)
@@ -224,7 +262,7 @@ def main(args):
 
         for name, pipeline in estimators:
             model_name = pipeline.steps[-1][0]
-            if not get_prediction_data(predictions_path + '/train/', fold_nr, name, model_name, max_features).empty:
+            if not get_prediction_data(predictions_path + 'train/', fold_nr, name, model_name, max_features).empty:
                 logger.info(f'Skipping {fold_nr} {name} {model_name} {max_features}')
                 continue
 
@@ -247,17 +285,25 @@ def main(args):
 
             logger.info(f'Model accuracy: {eval_acc}')
 
-            full_name = f'{fold_nr}_{name}_{model_name}_{max_features}_{eval_acc:.3f}.csv'
-            training_df.to_csv(f'{predictions_path}/train/{full_name}', index=False)
-            test_df.to_csv(f'{predictions_path}/test/{full_name}', index=False)
+            full_name = f'{fold_nr}/{name}_{model_name}_{max_features}_{eval_acc:.3f}.csv'
+            training_fold_folder = f'{predictions_path}/train/{full_name}'
+            test_fold_folder = f'{predictions_path}/test/{full_name}'
+
+            if not os.path.exists(training_fold_folder):
+                os.mkdir(training_fold_folder)
+            if not os.path.exists(test_fold_folder):
+                os.mkdir(test_fold_folder)
+
+            training_df.to_csv(training_fold_folder, index=False)
+            test_df.to_csv(test_fold_folder, index=False)
 
         training_frames = []
         test_frames = []
         for name, pipeline in estimators:
             model_name = pipeline.steps[-1][0]
 
-            training_df = get_prediction_data(predictions_path + '/train/', fold_nr, name, model_name, max_features)
-            test_df = get_prediction_data(predictions_path + '/test/', fold_nr, name, model_name, max_features)
+            training_df = get_prediction_data(predictions_path + 'train/', fold_nr, name, model_name, max_features)
+            test_df = get_prediction_data(predictions_path + 'test/', fold_nr, name, model_name, max_features)
 
             assert not training_df.empty, 'Training data frame was empty'
             assert not test_df.empty, 'Test data frame was empty'
@@ -277,7 +323,7 @@ def main(args):
             all_training_data_df = merge_with_bert(all_training_data_df, bert_training_file, bert_output_type)
             all_test_data_df = merge_with_bert(all_test_data_df, bert_test_file, bert_output_type)
 
-        all_training_data_df.to_csv(f'./common_predictions/reddit_predictions/{fold_nr}_all_training_data.csv', index=False)
+        # all_training_data_df.to_csv(f'./common_predictions/reddit_predictions/{fold_nr}_all_training_data.csv', index=False)
 
         drop_columns = [column_name for column_name in all_training_data_df.columns if 'guid' in column_name]
         logger.info(f'Dropping columns: {drop_columns}')
@@ -321,8 +367,6 @@ def main(args):
             'output' : eval_predictions,
         }).to_csv(f'{output_path}/{folder_name}/{fold_nr}_{eval_acc:.3f}_{macro_f1:.3f}.csv', index=False)
 
-        # save_results(predictions_path, model_name, bagging_estimator, estimators, max_features, use_bert, eval_acc, macro_f1)
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
@@ -331,6 +375,11 @@ if __name__ == '__main__':
                         type=int,
                         required=False,
                         help='Specify which fold should be run. If not specified, all folds will be run in succession.')
+    parser.add_argument('--out_of_domain',
+                        default=False,
+                        type=bool,
+                        required=False,
+                        help='Specify whether to run the out-of-domain scenario.')
     args = parser.parse_args()
 
     main(args)

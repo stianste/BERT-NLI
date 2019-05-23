@@ -342,6 +342,8 @@ class RedditOutOfDomainDataProcessor(RedditInDomainDataProcessor):
             # Use the ramaining possible users for training
             self.indomain_users = self.indomain_users.union(usernames.difference(non_europe_users))
 
+        print('Intersection: ')
+        print(self.indomain_users.intersection(self.out_of_domain_users))
         examples = []
         for username in self.indomain_users:
             for example in self.europe_user2examples[username]:
