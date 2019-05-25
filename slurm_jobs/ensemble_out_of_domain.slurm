@@ -4,7 +4,7 @@
 #SBATCH --time=50:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
-#SBATCH --mem=16000
+#SBATCH --mem=32000
 #SBATCH --job-name="ood-ensemble"
 #SBATCH --output=/lustre1/work/stianste/BERT-NLI/outputs/ensemble_out_of_domain.out
 #SBATCH --mail-user=stianste@stud.ntnu.no

@@ -71,6 +71,7 @@ def str2model(model_name):
         'svm' : SVC(kernel='linear', cache_size=4098, decision_function_shape='ovr', probability=True),
         'ffnn' : MLPClassifier(),
         'XGBoost' : XGBClassifier(max_depth=20),
+        'lda' : LinearDiscriminantAnalysis(),
     }
     return models[model_name]
 
@@ -151,8 +152,8 @@ def main():
     y_test_guids, y_test_no_guid = zip(*y_test)
 
     base_model_type = 'ffnn'
-    stack_type = 'meta_ensemble'
-    meta_classifier_type = 'ffnn'
+    stack_type = 'meta_classifier'
+    meta_classifier_type = 'lda'
     max_features = None
     use_bert = True
 
@@ -251,10 +252,10 @@ def main():
         bagging_estimator = ''
     else:
         base_estimator = str2model(meta_classifier_type)
-        # model = BaggingClassifier(base_estimator,
-        #                         n_estimators=num_bagging_classifiers, max_samples=max_samples)
+        model = BaggingClassifier(base_estimator,
+                                n_estimators=num_bagging_classifiers, max_samples=max_samples)
         # model = AdaBoostClassifier(base_estimator=base_estimator)
-        model = GradientBoostingClassifier(base_estimator)
+        # model = GradientBoostingClassifier(base_estimator)
         bagging_estimator = type(base_estimator).__name__
 
     logger.info(f'All training data shape: {all_training_data.shape}')

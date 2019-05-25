@@ -295,8 +295,8 @@ def main(args):
             logger.info(f'Model accuracy: {eval_acc}')
 
             full_name = f'{name}_{model_name}_{max_features}_{eval_acc:.3f}.csv'
-            training_fold_folder = f'{predictions_path}train/{fold_nr}/'
-            test_fold_folder = f'{predictions_path}test/{fold_nr}/'
+            training_fold_folder = f'{predictions_path}train/{fold_nr}'
+            test_fold_folder = f'{predictions_path}test/{fold_nr}'
 
             if not os.path.exists(training_fold_folder):
                 os.makedirs(training_fold_folder)
