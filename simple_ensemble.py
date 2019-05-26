@@ -131,6 +131,10 @@ def merge_with_bert(df, predictions_path, scenario, bert_output_type=None):
     elif bert_output_type == 'softmax':
         bert_df[non_guid_columns] = bert_df[non_guid_columns].apply(lambda row: softmax(row), axis=1)
 
+    elif bert_output_type == 'all':
+        # bert_df[[col + '_prop' for col in non_guid_columns]] = bert_df[non_guid_columns].applymap(lambda cell: map_logit_to_probability(cell))
+        bert_df[[col + '_softmax' for col in non_guid_columns]] = bert_df[non_guid_columns].apply(lambda row: softmax(row), axis=1)
+
     combined_df = pd.merge(df, bert_df, on=['guid'])
     return combined_df
 

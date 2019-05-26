@@ -175,6 +175,10 @@ def merge_with_bert(df, csv_filepath, bert_output_type=None, is_testing=False):
     elif bert_output_type == 'softmax':
         bert_df[non_guid_columns] = bert_df[non_guid_columns].apply(lambda row: softmax(row), axis=1)
 
+    elif bert_output_type == 'all':
+        bert_df[[col + '_prop' for col in non_guid_columns]] = bert_df[non_guid_columns].applymap(lambda cell: map_logit_to_probability(cell))
+        bert_df[[col + '_softmax' for col in non_guid_columns]] = bert_df[non_guid_columns].apply(lambda row: softmax(row), axis=1)
+
     combined_df = pd.merge(df, bert_df, on=['guid'])
     return combined_df
 
@@ -184,7 +188,7 @@ def main(args):
     out_of_domain = args.out_of_domain
     logger.info(f'Using out of domain: {out_of_domain}')
 
-    bert_output_type = ''
+    bert_output_type = 'all'
 
     max_features = None
     stack_type = 'meta_classifier'
