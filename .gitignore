@@ -120,6 +120,7 @@ venv.bak/
 /temp
 /plots
 common_predictions/all_training_data.csv
+results/reddit/out_to_in_domain/
 
 # vscode
 .vscode/

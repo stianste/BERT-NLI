@@ -135,13 +135,10 @@ def get_examples_based_on_csv(csv_filepath, examples, is_testing=False):
         guids = set(pd.read_csv(csv_filepath)['guid'])
 
     filtered_examples = list(filter(lambda ex: ex.guid in guids, examples))
-    example_guids = set([ex.guid for ex in examples])
-    logger.info(random.sample(example_guids, 10))
-    logger.info(random.sample(guids, 10))
 
     logger.info(f'Len filtered: {len(filtered_examples)} len guids: {len(guids)}')
     assert len(filtered_examples) == len(guids)
-    return filtered_examples
+    return sorted(filtered_examples, key=lambda ex: ex.guid)
 
 def save_results(predictions_path, model_name, bagging_estimator, estimators, max_features, with_bert, eval_acc, f1):
     base_estimator_name = estimators[0][1].steps[-1][0]
@@ -188,7 +185,7 @@ def main(args):
     out_of_domain = args.out_of_domain
     logger.info(f'Using out of domain: {out_of_domain}')
 
-    bert_output_type = 'all'
+    bert_output_type = ''
 
     max_features = None
     stack_type = 'meta_classifier'
@@ -217,6 +214,7 @@ def main(args):
         if os.path.isdir(filename):
             # Skip the training folds folder itself
             continue
+
         # Base training on the same folds used for BERT
         fold_nr, file_type = filename.split('.')
         
@@ -281,7 +279,6 @@ def main(args):
             logger.info(f'Traning {name} {model_name} {max_features}...')
 
             pipeline.fit(training_examples_no_guid, y_train_no_guid)
-
 
             training_predictions = pipeline.predict_proba(training_examples_no_guid)
             test_predictions = pipeline.predict_proba(test_examples_no_guid)
