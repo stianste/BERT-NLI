@@ -187,7 +187,7 @@ def main(args):
 
     bert_output_type = ''
 
-    max_features = None
+    max_features = 30000
     stack_type = 'meta_classifier'
     meta_classifier_type = 'ffnn'
     base_model_type = 'ffnn'
