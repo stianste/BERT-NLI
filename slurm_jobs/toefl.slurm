@@ -2,7 +2,7 @@
 
 #SBATCH --partition=EPICALL
 #SBATCH --gres=gpu:2
-#SBATCH --time=2:00:00
+#SBATCH --time=10:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
 #SBATCH --mem=64000
@@ -40,10 +40,10 @@ python ./run_BERT_NLI.py \
   --do_train \
   --do_eval \
   --data_dir $DATA_DIR \
-  --bert_model bert-base-uncased \
-  --learning_rate 3e-5 \
+  --bert_model bert-large-uncased \
+  --learning_rate 5e-5 \
   --max_seq_length 512 \
-  --train_batch_size 16 \
+  --train_batch_size 1 \
   --num_train_epochs 5 \
   --output_dir ./results/toefl/temp
 
