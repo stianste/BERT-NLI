@@ -1,29 +1,20 @@
 import os
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 from collections import defaultdict, Counter
 from sklearn.metrics import f1_score
+from plot_confusion_matrix import plot_confusion_matrix
+from data_processors import RedditInDomainDataProcessor
 
-out_of_domain = False
+out_of_domain = True
 sub_folder = '/out-of-domain' if out_of_domain else ''
-outputs_folder = f'./results/reddit{sub_folder}/seq_512_batch_16_epochs_5.0_lr_3e-05'
 
 with_bert = True
 bert_string = '_wBERT' if with_bert else ''
-# outputs_folder = f'./common_predictions/reddit_predictions/results/outputs/MLPClassifier__ffnn_30000{bert_string}_/'
-# outputs_folder = './results/reddit/out_to_in_domain/' # seq_512_batch_16_epochs_5.0_lr_3e-05'
-# filenames = ['05-25_10:07_seq_512_batch_16_epochs_5.0_lr_3e-05_train_fold_1.csv']
-reddit_out_to_in_domain = './results/reddit/out_to_in_domain/seq_512_batch_16_epochs_5.0_lr_3e-05/fold_1.csv'
-# oracle_df = pd.read_csv()
-# oracle_df['guid'] = oracle_df['guid'].apply(lambda guid: '_'.join(guid.split('_')[:-1]))
+outputs_folder = './common_predictions/reddit_predictions/out-of-domain/results/outputs/MLPClassifier__ffnn_None_wBERT_'
 
-# oracle_predictions = defaultdict(list)
-# for i, row in oracle_df.iterrows():
-#     oracle_predictions[row.guid].append(row.output)
-
-# oracle_predictions = {guid : Counter(outputs).most_common(1)[0][0] for guid, outputs in oracle_predictions.items()}
-# del oracle_df
-# filenames = sorted(os.listdir(outputs_folder))
-filenames = [reddit_out_to_in_domain]
+filenames = sorted(os.listdir(outputs_folder))
 
 accuracies = []
 total_num_chunks = 0
@@ -33,7 +24,7 @@ all_labels = []
 for filename in filenames:
     if filename.split('.')[-1] == 'csv':
         print(filename)
-        df = pd.read_csv(filename)
+        df = pd.read_csv(f'{outputs_folder}/{filename}')
         df['guid'] = df['guid'].apply(lambda guid: '_'.join(guid.split('_')[:-1]))
         chunk2outputs = defaultdict(list)
         chunk2label = {}
@@ -65,8 +56,18 @@ for filename in filenames:
 
 other_average = sum([1 for i in range(len(all_outputs)) if all_outputs[i] == all_labels[i]]) / len(all_outputs)
 f1 = f1_score(all_outputs, all_labels, average='macro')
-    
+
 average_eval_acc = sum(accuracies) / len(accuracies)
 print(f'Average accuracy: {average_eval_acc:.3f}')
 print(f'Other average and f1: {other_average:.3f}, {f1:.3f}')
 print('Average number of examples:', total_num_chunks / 10)
+print(all_labels[:10])
+print(all_outputs[:10])
+
+ax = plot_confusion_matrix(all_labels, all_outputs, classes=RedditInDomainDataProcessor(0).get_labels())
+ax.set_ylabel('Correct')
+ax.set_xlabel('Predicted')
+plt.show()
+np.set_printoptions(precision=2)
+plt.savefig(f'./plots/confusion_matrix.png')
+    

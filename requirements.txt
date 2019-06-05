@@ -10,3 +10,4 @@ matplotlib
 pyspellchecker
 pandas
 xgboost
+seaborn

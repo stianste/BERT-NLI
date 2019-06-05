@@ -474,7 +474,6 @@ def main():
     all_inputs = np.zeros((num_train_examples))
     all_outputs = np.zeros((num_train_examples))
     all_predicted_logits = np.zeros((num_train_examples, len(label_list)))
-    data_idx = 0
 
     for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
         batch = tuple(t.to(device) for t in batch)
